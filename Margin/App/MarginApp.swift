@@ -12,7 +12,11 @@ import SwiftData
 struct MarginApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Workspace.self,
+            Notebook.self,
+            Page.self,
+            Block.self,
+            PDFAsset.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +29,7 @@ struct MarginApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
         .modelContainer(sharedModelContainer)
     }

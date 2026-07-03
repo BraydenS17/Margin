@@ -22,15 +22,49 @@ final class MarginUITests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+    // Note: `addNotebook()`/`addPage()` in the app select the newly created item
+    // immediately, so NavigationSplitView shows the next column (content/detail)
+    // without any extra tap — these tests just wait for that column to appear.
+
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testAddingNotebookShowsNewRow() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let addNotebookButton = app.buttons["New Notebook"]
+        XCTAssertTrue(addNotebookButton.waitForExistence(timeout: 5))
+        addNotebookButton.tap()
+
+        // Selecting the new notebook navigates to its page list, whose
+        // navigation bar identifier is the notebook's title.
+        XCTAssertTrue(app.navigationBars["Untitled Notebook"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testAddingPageShowsNewRowAndDetail() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let addNotebookButton = app.buttons["New Notebook"]
+        XCTAssertTrue(addNotebookButton.waitForExistence(timeout: 5))
+        addNotebookButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Untitled Notebook"].waitForExistence(timeout: 5))
+
+        let addPageButton = app.buttons["New Page"]
+        XCTAssertTrue(addPageButton.waitForExistence(timeout: 5))
+        addPageButton.tap()
+
+        // "Untitled Page" surfaces either as the page list row (regular width,
+        // where content and detail columns are both visible) or as the detail
+        // column's title (compact width, where selecting a page navigates
+        // straight to it) — match any element carrying that label.
+        let untitledPage = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Untitled Page"))
+            .firstMatch
+        XCTAssertTrue(untitledPage.waitForExistence(timeout: 5))
+
+        XCTAssertFalse(app.staticTexts["Select a Page"].exists)
     }
 
     @MainActor
