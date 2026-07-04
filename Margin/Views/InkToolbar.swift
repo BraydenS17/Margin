@@ -5,34 +5,79 @@ struct InkToolbar: View {
     @Binding var tool: InkToolKind
     @Binding var color: Color
     @Binding var width: CGFloat
+    @Binding var inputMode: InkInputMode
+    var pencilDetected: Bool
 
     private let palette: [Color] = [.black, Theme.accent, .red, .blue, .green, .purple]
     private let widths: [CGFloat] = [2, 4, 9]
 
     var body: some View {
-        HStack(spacing: 14) {
-            ForEach(InkToolKind.allCases) { kind in
-                toolButton(kind)
+        VStack(spacing: 8) {
+            if inputMode == .auto {
+                statusPill
             }
-
-            separator
-
-            if tool != .eraser {
-                HStack(spacing: 8) {
-                    ForEach(palette, id: \.self) { swatch($0) }
-                }
+            HStack(spacing: 14) {
+                inputModeMenu
                 separator
-            }
 
-            HStack(spacing: 10) {
-                ForEach(widths, id: \.self) { widthDot($0) }
+                ForEach(InkToolKind.allCases) { kind in
+                    toolButton(kind)
+                }
+
+                separator
+
+                if tool != .eraser {
+                    HStack(spacing: 8) {
+                        ForEach(palette, id: \.self) { swatch($0) }
+                    }
+                    separator
+                }
+
+                HStack(spacing: 10) {
+                    ForEach(widths, id: \.self) { widthDot($0) }
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+    }
+
+    private var statusPill: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(pencilDetected ? Theme.accent : Theme.muted)
+                .frame(width: 6, height: 6)
+            Text(pencilDetected ? "PENCIL DETECTED · FINGER SCROLLS" : "AUTO · WAITING FOR PENCIL")
+        }
+        .font(.system(size: 10, weight: .bold))
+        .tracking(0.8)
+        .foregroundStyle(pencilDetected ? Theme.accent : Theme.muted)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
         .background(Theme.surface, in: Capsule())
         .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+    }
+
+    /// Taps cycle Auto → Finger+Pencil → Pencil Only → Auto. A plain cycling button (rather
+    /// than a system Menu) keeps this consistent with the rest of the flat, chrome-free
+    /// toolbar — an icon-only Menu label picks up an automatic tinted-capsule "hint" style
+    /// on iOS that clashes with the custom look everywhere else here.
+    private var inputModeMenu: some View {
+        Button {
+            let all = InkInputMode.allCases
+            let next = all[(all.firstIndex(of: inputMode)! + 1) % all.count]
+            inputMode = next
+        } label: {
+            Image(systemName: inputMode.systemImage)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.text)
+                .frame(width: 38, height: 34)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Input Mode: \(inputMode.label). Tap to change.")
     }
 
     private var separator: some View {

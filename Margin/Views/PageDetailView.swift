@@ -11,6 +11,19 @@ struct PageDetailView: View {
     @State private var inkColor: Color = .black
     @State private var inkWidth: CGFloat = 4
     @State private var inkUndoController = InkUndoController()
+    @State private var pencilDetected = false
+    @AppStorage("inkInputMode") private var inputModeRaw = InkInputMode.auto.rawValue
+
+    private var inputMode: InkInputMode {
+        InkInputMode(rawValue: inputModeRaw) ?? .auto
+    }
+
+    private var inputModeBinding: Binding<InkInputMode> {
+        Binding(
+            get: { inputMode },
+            set: { inputModeRaw = $0.rawValue }
+        )
+    }
 
     enum PageMode: String, CaseIterable, Identifiable {
         case edit = "Edit"
@@ -30,8 +43,14 @@ struct PageDetailView: View {
         #endif
         .overlay(alignment: .bottom) {
             if mode == .draw {
-                InkToolbar(tool: $inkTool, color: $inkColor, width: $inkWidth)
-                    .padding(.bottom, 18)
+                InkToolbar(
+                    tool: $inkTool,
+                    color: $inkColor,
+                    width: $inkWidth,
+                    inputMode: inputModeBinding,
+                    pencilDetected: pencilDetected
+                )
+                .padding(.bottom, 18)
             }
         }
     }
@@ -98,6 +117,8 @@ struct PageDetailView: View {
                         tool: inkTool,
                         color: inkColor,
                         width: inkWidth,
+                        inputMode: inputMode,
+                        pencilDetected: $pencilDetected,
                         undoController: inkUndoController
                     )
                     // PageDetailView keeps the same view identity across page switches (it's
