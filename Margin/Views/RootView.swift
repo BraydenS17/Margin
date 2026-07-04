@@ -14,7 +14,7 @@ struct RootView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            NotebookSidebarView(workspace: workspaces.first, selectedNotebook: $selectedNotebook)
+            NotebookSidebarView(workspace: workspaces.first, selectedNotebook: $selectedNotebook, selectedPage: $selectedPage)
         } content: {
             if let notebook = selectedNotebook {
                 PageListView(notebook: notebook, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
