@@ -8,6 +8,7 @@ struct PageListView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingTemplatePicker = false
+    @State private var renameTarget: Page?
 
     private var pages: [Page] {
         (notebook.pages ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -21,7 +22,11 @@ struct PageListView: View {
             } else {
                 List(selection: $selectedPage) {
                     ForEach(pages) { page in
-                        PageRow(page: page).tag(page)
+                        PageRow(page: page)
+                            .tag(page)
+                            .contextMenu {
+                                Button("Rename", systemImage: "pencil") { renameTarget = page }
+                            }
                     }
                     .onDelete(perform: deletePages)
                     .listRowSeparatorTint(Theme.border)
@@ -36,6 +41,10 @@ struct PageListView: View {
         #endif
         .sheet(isPresented: $showingTemplatePicker) {
             TemplatePickerView(onSelect: addPage)
+        }
+        .renameAlert(item: $renameTarget, title: "Rename Page") { page, newTitle in
+            page.title = newTitle
+            page.updatedAt = Date()
         }
     }
 
