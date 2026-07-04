@@ -13,6 +13,9 @@ struct PageDetailView: View {
     @State private var inkUndoController = InkUndoController()
     @State private var pencilDetected = false
     @AppStorage("inkInputMode") private var inputModeRaw = InkInputMode.auto.rawValue
+    #if os(iOS)
+    @State private var exportedFile: ExportedFile?
+    #endif
 
     private var inputMode: InkInputMode {
         InkInputMode(rawValue: inputModeRaw) ?? .auto
@@ -30,6 +33,13 @@ struct PageDetailView: View {
         case draw = "Draw"
         var id: String { rawValue }
     }
+
+    #if os(iOS)
+    struct ExportedFile: Identifiable {
+        let url: URL
+        var id: URL { url }
+    }
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,13 +77,28 @@ struct PageDetailView: View {
                     action: cycleBackground
                 )
             }
+            #if os(iOS)
+            FlatIconButton(systemName: "square.and.arrow.up", label: "Export PDF", action: exportPDF)
+            #endif
             Spacer()
             modeToggle
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Theme.background)
+        #if os(iOS)
+        .sheet(item: $exportedFile) { file in
+            ShareSheet(url: file.url)
+        }
+        #endif
     }
+
+    #if os(iOS)
+    private func exportPDF() {
+        guard let url = PageExporter.writeTemporaryPDF(for: page) else { return }
+        exportedFile = ExportedFile(url: url)
+    }
+    #endif
 
     private func cycleBackground() {
         let options = PageBackground.selectable
