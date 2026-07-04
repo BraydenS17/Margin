@@ -8,6 +8,9 @@
 import Testing
 import Foundation
 import SwiftData
+#if os(iOS)
+import PDFKit
+#endif
 @testable import Margin
 
 @MainActor
@@ -309,4 +312,32 @@ struct MarginTests {
             }
         }
     }
+
+    #if os(iOS)
+    @Test func pageExportsToValidPDF() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Export")
+        context.insert(notebook)
+        let page = Page(title: "Export Me", notebook: notebook)
+        context.insert(page)
+        context.insert(Block(type: .heading, textContent: "A Heading", sortIndex: 0, page: page))
+        context.insert(Block(type: .paragraph, textContent: "Some body text.", sortIndex: 1, page: page))
+        let checkbox = Block(type: .checkbox, textContent: "Done thing", sortIndex: 2, page: page)
+        checkbox.isChecked = true
+        context.insert(checkbox)
+        let tableBlock = Block(type: .table, sortIndex: 3, page: page)
+        tableBlock.table = BlockTableData(rows: [["a", "b"], ["c", "d"]])
+        context.insert(tableBlock)
+        try context.save()
+
+        let data = try #require(PageExporter.pdfData(for: page))
+        #expect(String(decoding: data.prefix(5), as: UTF8.self) == "%PDF-")
+
+        let document = try #require(PDFDocument(data: data))
+        #expect(document.pageCount == 1)
+        let text = document.page(at: 0)?.string ?? ""
+        #expect(text.contains("Export Me"))
+        #expect(text.contains("A Heading"))
+    }
+    #endif
 }
