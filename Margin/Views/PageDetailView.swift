@@ -60,12 +60,29 @@ struct PageDetailView: View {
             FlatIconButton(systemName: "sidebar.leading", label: "Toggle Panels") { toggleColumns() }
             FlatIconButton(systemName: "arrow.uturn.backward", label: "Undo", action: undo)
             FlatIconButton(systemName: "arrow.uturn.forward", label: "Redo", action: redo)
+            if page.background != .pdf {
+                FlatIconButton(
+                    systemName: page.background.systemImage,
+                    label: "Background: \(page.background.displayName). Tap to change.",
+                    action: cycleBackground
+                )
+            }
             Spacer()
             modeToggle
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Theme.background)
+    }
+
+    private func cycleBackground() {
+        let options = PageBackground.selectable
+        guard let index = options.firstIndex(of: page.background) else {
+            page.background = options[0]
+            return
+        }
+        page.background = options[(index + 1) % options.count]
+        page.updatedAt = Date()
     }
 
     private var modeToggle: some View {

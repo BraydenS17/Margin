@@ -5,6 +5,28 @@ enum PageBackground: String, CaseIterable {
     case ruled
     case grid
     case pdf
+
+    var displayName: String {
+        switch self {
+        case .blank: return "Blank"
+        case .ruled: return "Ruled"
+        case .grid: return "Grid"
+        case .pdf: return "PDF"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .blank: return "rectangle"
+        case .ruled: return "text.justify"
+        case .grid: return "grid"
+        case .pdf: return "doc.richtext"
+        }
+    }
+
+    /// Backgrounds a user can freely switch between. `.pdf` is excluded — it's set by
+    /// PDF import and switching away/into it by hand would orphan the page/PDF mapping.
+    static var selectable: [PageBackground] { [.blank, .ruled, .grid] }
 }
 
 enum BlockType: String, CaseIterable {
