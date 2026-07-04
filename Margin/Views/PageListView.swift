@@ -4,6 +4,7 @@ import SwiftData
 struct PageListView: View {
     @Bindable var notebook: Notebook
     @Binding var selectedPage: Page?
+    @Binding var columnVisibility: NavigationSplitViewVisibility
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingTemplatePicker = false
@@ -30,20 +31,9 @@ struct PageListView: View {
             }
         }
         .background(Theme.background)
-        .navigationTitle("")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    showingTemplatePicker = true
-                } label: {
-                    Label("New Page", systemImage: "plus")
-                }
-                .accessibilityIdentifier("New Page")
-            }
-        }
         .sheet(isPresented: $showingTemplatePicker) {
             TemplatePickerView(onSelect: addPage)
         }
@@ -51,6 +41,16 @@ struct PageListView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                FlatIconButton(systemName: "sidebar.leading", label: "Toggle Sidebar") {
+                    columnVisibility = columnVisibility == .all ? .doubleColumn : .all
+                }
+                Spacer()
+                FlatIconButton(systemName: "plus", label: "New Page") {
+                    showingTemplatePicker = true
+                }
+                .accessibilityIdentifier("New Page")
+            }
             Text(notebook.title)
                 .font(.editorialDisplay(30))
                 .foregroundStyle(Theme.text)
@@ -61,7 +61,7 @@ struct PageListView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.top, 8)
+        .padding(.top, 10)
         .padding(.bottom, 16)
     }
 

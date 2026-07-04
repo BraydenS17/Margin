@@ -45,6 +45,29 @@ extension View {
     }
 }
 
+/// Flat bordered icon button — the app's replacement for glass toolbar buttons.
+struct FlatIconButton: View {
+    let systemName: String
+    var label: String = ""
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 36, height: 34)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label.isEmpty ? systemName : label)
+    }
+}
+
 /// A hairline rule with an accent tick at the leading edge — the recurring editorial motif.
 struct AccentRule: View {
     var body: some View {

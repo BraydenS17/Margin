@@ -35,9 +35,9 @@ final class MarginUITests: XCTestCase {
         XCTAssertTrue(addNotebookButton.waitForExistence(timeout: 5))
         addNotebookButton.tap()
 
-        // Selecting the new notebook navigates to its page list, whose
-        // navigation bar identifier is the notebook's title.
-        XCTAssertTrue(app.navigationBars["Untitled Notebook"].waitForExistence(timeout: 5))
+        // Selecting the new notebook navigates to its page list, whose custom
+        // header renders the notebook's title as a static text.
+        XCTAssertTrue(app.staticTexts["Untitled Notebook"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -49,7 +49,7 @@ final class MarginUITests: XCTestCase {
         XCTAssertTrue(addNotebookButton.waitForExistence(timeout: 5))
         addNotebookButton.tap()
 
-        XCTAssertTrue(app.navigationBars["Untitled Notebook"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Untitled Notebook"].waitForExistence(timeout: 5))
 
         let addPageButton = app.buttons["New Page"]
         XCTAssertTrue(addPageButton.waitForExistence(timeout: 5))
@@ -64,7 +64,7 @@ final class MarginUITests: XCTestCase {
             .firstMatch
         XCTAssertTrue(untitledPage.waitForExistence(timeout: 5))
 
-        XCTAssertFalse(app.staticTexts["Select a Page"].exists)
+        XCTAssertFalse(app.staticTexts["Nothing Open"].exists)
     }
 
     @MainActor

@@ -3,8 +3,13 @@ import SwiftData
 
 struct PageDetailView: View {
     @Bindable var page: Page
+    @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
+
     @State private var mode: PageMode = .edit
+    @State private var inkTool: InkToolKind = .pen
+    @State private var inkColor: Color = .black
+    @State private var inkWidth: CGFloat = 4
     @State private var inkUndoController = InkUndoController()
 
     enum PageMode: String, CaseIterable, Identifiable {
@@ -14,6 +19,59 @@ struct PageDetailView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            topBar
+            Rectangle().fill(Theme.border).frame(height: 1)
+            pageArea
+        }
+        .background(Theme.background)
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .overlay(alignment: .bottom) {
+            if mode == .draw {
+                InkToolbar(tool: $inkTool, color: $inkColor, width: $inkWidth)
+                    .padding(.bottom, 18)
+            }
+        }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 10) {
+            FlatIconButton(systemName: "sidebar.leading", label: "Toggle Panels") { toggleColumns() }
+            FlatIconButton(systemName: "arrow.uturn.backward", label: "Undo", action: undo)
+            FlatIconButton(systemName: "arrow.uturn.forward", label: "Redo", action: redo)
+            Spacer()
+            modeToggle
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Theme.background)
+    }
+
+    private var modeToggle: some View {
+        HStack(spacing: 0) {
+            ForEach(PageMode.allCases) { m in
+                Button {
+                    mode = m
+                } label: {
+                    Text(m.rawValue)
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(0.5)
+                        .foregroundStyle(mode == m ? Color.white : Theme.muted)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 7)
+                        .background(mode == m ? Theme.accent : Color.clear, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Theme.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+    }
+
+    private var pageArea: some View {
         ScrollView {
             pageBackground
                 .frame(minHeight: 1000)
@@ -35,29 +93,20 @@ struct PageDetailView: View {
                     .allowsHitTesting(mode == .edit)
                 }
                 .overlay {
-                    InkCanvasView(inkData: $page.inkData, undoController: inkUndoController)
-                        .allowsHitTesting(mode == .draw)
+                    InkCanvasView(
+                        inkData: $page.inkData,
+                        tool: inkTool,
+                        color: inkColor,
+                        width: inkWidth,
+                        undoController: inkUndoController
+                    )
+                    .allowsHitTesting(mode == .draw)
                 }
         }
-        .navigationTitle(page.title)
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button("Undo", systemImage: "arrow.uturn.backward", action: undo)
-                Button("Redo", systemImage: "arrow.uturn.forward", action: redo)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Picker("Mode", selection: $mode) {
-                    ForEach(PageMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .fixedSize()
-            }
-        }
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+    }
+
+    private func toggleColumns() {
+        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
     }
 
     private func undo() {
@@ -78,7 +127,7 @@ struct PageDetailView: View {
     private var pageBackground: some View {
         switch page.background {
         case .blank:
-            Rectangle().fill(.background)
+            Rectangle().fill(Theme.background)
         case .ruled:
             RuledBackground()
         case .grid:
@@ -102,7 +151,7 @@ private struct RuledBackground: View {
                 y += lineSpacing
             }
         }
-        .background(.background)
+        .background(Theme.background)
     }
 }
 
@@ -127,6 +176,6 @@ private struct GridBackground: View {
                 y += spacing
             }
         }
-        .background(.background)
+        .background(Theme.background)
     }
 }

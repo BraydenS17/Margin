@@ -1,0 +1,88 @@
+import SwiftUI
+
+/// Flat, custom drawing toolbar that replaces PencilKit's system tool picker.
+struct InkToolbar: View {
+    @Binding var tool: InkToolKind
+    @Binding var color: Color
+    @Binding var width: CGFloat
+
+    private let palette: [Color] = [.black, Theme.accent, .red, .blue, .green, .purple]
+    private let widths: [CGFloat] = [2, 4, 9]
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ForEach(InkToolKind.allCases) { kind in
+                toolButton(kind)
+            }
+
+            separator
+
+            if tool != .eraser {
+                HStack(spacing: 8) {
+                    ForEach(palette, id: \.self) { swatch($0) }
+                }
+                separator
+            }
+
+            HStack(spacing: 10) {
+                ForEach(widths, id: \.self) { widthDot($0) }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Theme.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+    }
+
+    private var separator: some View {
+        Rectangle().fill(Theme.border).frame(width: 1, height: 24)
+    }
+
+    private func toolButton(_ kind: InkToolKind) -> some View {
+        let selected = tool == kind
+        return Button {
+            tool = kind
+        } label: {
+            Image(systemName: kind.systemImage)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(selected ? Color.white : Theme.text)
+                .frame(width: 38, height: 34)
+                .background(selected ? Theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(kind.label)
+    }
+
+    private func swatch(_ c: Color) -> some View {
+        let selected = color == c
+        return Button {
+            color = c
+        } label: {
+            Circle()
+                .fill(c)
+                .frame(width: 22, height: 22)
+                .overlay(Circle().strokeBorder(Theme.border, lineWidth: c == .black ? 0 : 0.5))
+                .overlay(
+                    Circle()
+                        .strokeBorder(Theme.accent, lineWidth: selected ? 2.5 : 0)
+                        .padding(-3)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func widthDot(_ w: CGFloat) -> some View {
+        let selected = width == w
+        return Button {
+            width = w
+        } label: {
+            Circle()
+                .fill(selected ? Theme.accent : Theme.muted)
+                .frame(width: w + 6, height: w + 6)
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}

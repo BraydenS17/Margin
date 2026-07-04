@@ -7,16 +7,17 @@ struct RootView: View {
 
     @State private var selectedNotebook: Notebook?
     @State private var selectedPage: Page?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     #if DEBUG
     @State private var showPDFInkSpike = false
     #endif
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             NotebookSidebarView(workspace: workspaces.first, selectedNotebook: $selectedNotebook)
         } content: {
             if let notebook = selectedNotebook {
-                PageListView(notebook: notebook, selectedPage: $selectedPage)
+                PageListView(notebook: notebook, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
             } else {
                 EditorialEmptyState(
                     systemImage: "books.vertical",
@@ -26,7 +27,7 @@ struct RootView: View {
             }
         } detail: {
             if let page = selectedPage {
-                PageDetailView(page: page)
+                PageDetailView(page: page, columnVisibility: $columnVisibility)
             } else {
                 EditorialEmptyState(
                     systemImage: "doc.text",

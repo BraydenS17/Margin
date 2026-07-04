@@ -31,18 +31,9 @@ struct NotebookSidebarView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Theme.background)
-        .navigationTitle("")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
-        .toolbar {
-            ToolbarItem {
-                Button(action: addNotebook) {
-                    Label("New Notebook", systemImage: "plus")
-                }
-                .accessibilityIdentifier("New Notebook")
-            }
-        }
     }
 
     private var brandHeader: some View {
@@ -56,6 +47,8 @@ struct NotebookSidebarView: View {
                     .fill(Theme.accent)
                     .frame(width: 7, height: 7)
                 Spacer()
+                FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
+                    .accessibilityIdentifier("New Notebook")
             }
             AccentRule()
             Text(workspace?.name ?? "Workspace")
