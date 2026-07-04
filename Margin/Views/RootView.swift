@@ -18,21 +18,25 @@ struct RootView: View {
             if let notebook = selectedNotebook {
                 PageListView(notebook: notebook, selectedPage: $selectedPage)
             } else {
-                ContentUnavailableView("Select a Notebook", systemImage: "book.closed")
+                EditorialEmptyState(
+                    systemImage: "books.vertical",
+                    title: "Pick a Notebook",
+                    message: "Choose one on the left to see its pages"
+                )
             }
         } detail: {
             if let page = selectedPage {
                 PageDetailView(page: page)
             } else {
-                ContentUnavailableView("Select a Page", systemImage: "doc.text")
+                EditorialEmptyState(
+                    systemImage: "doc.text",
+                    title: "Nothing Open",
+                    message: "Select or create a page to start writing"
+                )
             }
         }
-        .onAppear {
-            ensureWorkspaceExists()
-            if modelContext.undoManager == nil {
-                modelContext.undoManager = UndoManager()
-            }
-        }
+        .tint(Theme.accent)
+        .onAppear(perform: ensureWorkspaceExists)
         #if DEBUG
         .toolbar {
             ToolbarItem(placement: .navigation) {

@@ -21,7 +21,11 @@ struct MarginApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            // Attach the undo manager before the context is ever mutated — SwiftData needs
+            // an initial snapshot to exist before the first undo-registering change.
+            container.mainContext.undoManager = UndoManager()
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

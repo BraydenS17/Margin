@@ -15,13 +15,26 @@ struct NotebookSidebarView: View {
     }
 
     var body: some View {
-        List(selection: $selectedNotebook) {
-            ForEach(rootNotebooks) { notebook in
-                NotebookRow(notebook: notebook)
+        VStack(spacing: 0) {
+            brandHeader
+            List(selection: $selectedNotebook) {
+                Section {
+                    ForEach(rootNotebooks) { notebook in
+                        NotebookRow(notebook: notebook)
+                    }
+                    .onDelete(perform: deleteNotebooks)
+                } header: {
+                    Text("Notebooks").metaLabel()
+                }
             }
-            .onDelete(perform: deleteNotebooks)
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
-        .navigationTitle(workspace?.name ?? "Margin")
+        .background(Theme.background)
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem {
                 Button(action: addNotebook) {
@@ -30,6 +43,27 @@ struct NotebookSidebarView: View {
                 .accessibilityIdentifier("New Notebook")
             }
         }
+    }
+
+    private var brandHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("MARGIN")
+                    .font(.editorialDisplay(26))
+                    .tracking(1)
+                    .foregroundStyle(Theme.text)
+                Circle()
+                    .fill(Theme.accent)
+                    .frame(width: 7, height: 7)
+                Spacer()
+            }
+            AccentRule()
+            Text(workspace?.name ?? "Workspace")
+                .metaLabel()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
     }
 
     private func addNotebook() {
@@ -53,19 +87,40 @@ private struct NotebookRow: View {
         (notebook.children ?? []).sorted { $0.sortIndex < $1.sortIndex }
     }
 
+    private var pageCount: Int {
+        notebook.pages?.count ?? 0
+    }
+
     var body: some View {
         if children.isEmpty {
-            Label(notebook.title, systemImage: "book")
-                .tag(notebook)
+            rowLabel.tag(notebook)
         } else {
             DisclosureGroup {
                 ForEach(children) { child in
                     NotebookRow(notebook: child)
                 }
             } label: {
-                Label(notebook.title, systemImage: "book")
-                    .tag(notebook)
+                rowLabel.tag(notebook)
             }
         }
+    }
+
+    private var rowLabel: some View {
+        HStack(spacing: 11) {
+            Image(systemName: "book.closed.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 18)
+            Text(notebook.title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.text)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if pageCount > 0 {
+                Text("\(pageCount)")
+                    .metaLabel()
+            }
+        }
+        .padding(.vertical, 3)
     }
 }

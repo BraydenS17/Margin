@@ -18,11 +18,18 @@ struct PageDetailView: View {
             pageBackground
                 .frame(minHeight: 1000)
                 .overlay(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(page.title)
-                            .font(.title2)
-                            .padding(.horizontal)
-                            .padding(.top)
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(page.title)
+                                .font(.editorialDisplay(34))
+                                .foregroundStyle(Theme.text)
+                                .lineLimit(3)
+                            AccentRule()
+                            Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
+                                .metaLabel()
+                        }
+                        .padding(.horizontal, 22)
+                        .padding(.top, 20)
                         BlockListView(page: page)
                     }
                     .allowsHitTesting(mode == .edit)

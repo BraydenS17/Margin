@@ -13,14 +13,27 @@ struct PageListView: View {
     }
 
     var body: some View {
-        List(selection: $selectedPage) {
-            ForEach(pages) { page in
-                Label(page.title, systemImage: "doc.text")
-                    .tag(page)
+        VStack(spacing: 0) {
+            header
+            if pages.isEmpty {
+                emptyState
+            } else {
+                List(selection: $selectedPage) {
+                    ForEach(pages) { page in
+                        PageRow(page: page).tag(page)
+                    }
+                    .onDelete(perform: deletePages)
+                    .listRowSeparatorTint(Theme.border)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
-            .onDelete(perform: deletePages)
         }
-        .navigationTitle(notebook.title)
+        .background(Theme.background)
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem {
                 Button {
@@ -34,6 +47,38 @@ struct PageListView: View {
         .sheet(isPresented: $showingTemplatePicker) {
             TemplatePickerView(onSelect: addPage)
         }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(notebook.title)
+                .font(.editorialDisplay(30))
+                .foregroundStyle(Theme.text)
+                .lineLimit(2)
+            AccentRule()
+            Text("\(pages.count) \(pages.count == 1 ? "Page" : "Pages")")
+                .metaLabel()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Image(systemName: "doc.badge.plus")
+                .font(.system(size: 34))
+                .foregroundStyle(Theme.accent)
+            Text("No pages yet")
+                .font(.editorialDisplay(20))
+                .foregroundStyle(Theme.text)
+            Text("Tap + to start from a template")
+                .metaLabel()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func addPage(from template: PageTemplate) {
@@ -57,5 +102,37 @@ struct PageListView: View {
         for index in offsets {
             modelContext.delete(pages[index])
         }
+    }
+}
+
+private struct PageRow: View {
+    @Bindable var page: Page
+
+    private var blockCount: Int { page.blocks?.count ?? 0 }
+
+    private var meta: String {
+        let blocks = "\(blockCount) \(blockCount == 1 ? "block" : "blocks")"
+        return "\(blocks) · \(page.background.rawValue)"
+    }
+
+    var body: some View {
+        HStack(spacing: 13) {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(Theme.accent)
+                .frame(width: 3, height: 34)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(page.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                Text(meta)
+                    .metaLabel()
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.muted)
+        }
+        .padding(.vertical, 6)
     }
 }
