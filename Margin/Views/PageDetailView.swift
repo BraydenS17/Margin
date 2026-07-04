@@ -100,6 +100,12 @@ struct PageDetailView: View {
                         width: inkWidth,
                         undoController: inkUndoController
                     )
+                    // PageDetailView keeps the same view identity across page switches (it's
+                    // reused at the same NavigationSplitView.detail slot), so without an
+                    // explicit id tied to the page, SwiftUI reuses the same PKCanvasView and
+                    // never reloads its drawing — ink then appears "stuck" on screen across
+                    // pages instead of following the page's own inkData.
+                    .id(page.id)
                     .allowsHitTesting(mode == .draw)
                 }
         }
