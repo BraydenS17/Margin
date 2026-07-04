@@ -8,6 +8,7 @@ struct NotebookSidebarView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
+    @State private var renameTarget: Notebook?
 
     private var rootNotebooks: [Notebook] {
         guard let workspace else { return [] }
@@ -45,7 +46,7 @@ struct NotebookSidebarView: View {
         List(selection: $selectedNotebook) {
             Section {
                 ForEach(rootNotebooks) { notebook in
-                    NotebookRow(notebook: notebook)
+                    NotebookRow(notebook: notebook, onRename: { renameTarget = $0 })
                 }
                 .onDelete(perform: deleteNotebooks)
             } header: {
@@ -54,6 +55,10 @@ struct NotebookSidebarView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
+        .renameAlert(item: $renameTarget, title: "Rename Notebook") { notebook, newTitle in
+            notebook.title = newTitle
+            notebook.updatedAt = Date()
+        }
     }
 
     private var searchField: some View {
@@ -182,6 +187,7 @@ private struct SearchResultRow: View {
 
 private struct NotebookRow: View {
     @Bindable var notebook: Notebook
+    var onRename: (Notebook) -> Void
 
     private var children: [Notebook] {
         (notebook.children ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -197,7 +203,7 @@ private struct NotebookRow: View {
         } else {
             DisclosureGroup {
                 ForEach(children) { child in
-                    NotebookRow(notebook: child)
+                    NotebookRow(notebook: child, onRename: onRename)
                 }
             } label: {
                 rowLabel.tag(notebook)
@@ -222,5 +228,8 @@ private struct NotebookRow: View {
             }
         }
         .padding(.vertical, 3)
+        .contextMenu {
+            Button("Rename", systemImage: "pencil") { onRename(notebook) }
+        }
     }
 }
