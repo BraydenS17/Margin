@@ -35,6 +35,7 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - **Rename** (`feature/rename`): context-menu rename for notebooks and pages via a reusable alert modifier.
 - **Page appearance** (`feature/page-appearance`): switch a page's background (blank/ruled/grid) after creation; `.pdf` reserved for import.
 - **PDF export** (`feature/export-pdf`): share a page as a single-page PDF — static block rendition composited with the rasterized ink layer. Known v1 limit: fixed 612pt layout width means ink can drift slightly vs. on-screen text position.
+- **Page thumbnails** (`feature/page-thumbnails`): live miniatures (blocks + ink) in the page list, generated through the same export pipeline and cached.
 
 ### Ink & Pencil
 - Pencil vs. finger detection (Notability-style palm rejection): Auto/Finger+Pencil/Pencil-Only input modes, auto-switching to pencil-only on first real Pencil touch. Needs real-device confirmation.
@@ -52,7 +53,7 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)
 
 - **M4 — PDF import/annotation**: import a PDF, per-page ink overlay, annotated-PDF export. Blocked on the spike verification above.
-- **M5 — remaining polish**: reorder/move across notebooks, thumbnails, onboarding.
+- **M5 — remaining polish**: reorder/move across notebooks, onboarding.
 - **M6 — Beta & monetize**: TestFlight, StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync.
 - **Real Notion-style databases**: custom properties (date/select/checkbox/text) on a live collection, with table/calendar/board views over that data — distinct from the static block-based templates shipped above. Explicitly scoped as a stretch goal, not required for v1; would be its own milestone if pursued.
 - **Image blocks**: currently a placeholder in the block editor, no picker/storage implemented.
