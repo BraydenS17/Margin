@@ -128,7 +128,8 @@ private struct PageRow: View {
         HStack(spacing: 13) {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(Theme.accent)
-                .frame(width: 3, height: 34)
+                .frame(width: 3, height: 46)
+            PageThumbnailView(page: page)
             VStack(alignment: .leading, spacing: 4) {
                 Text(page.title)
                     .font(.system(size: 16, weight: .bold))
