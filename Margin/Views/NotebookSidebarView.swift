@@ -42,8 +42,39 @@ struct NotebookSidebarView: View {
         #endif
     }
 
+    private var favoritePages: [Page] {
+        let descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.isFavorite })
+        return ((try? modelContext.fetch(descriptor)) ?? [])
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
     private var notebookList: some View {
         List(selection: $selectedNotebook) {
+            let favorites = favoritePages
+            if !favorites.isEmpty {
+                Section {
+                    ForEach(favorites) { page in
+                        Button {
+                            selectedNotebook = page.notebook
+                            selectedPage = page
+                        } label: {
+                            HStack(spacing: 11) {
+                                Text(page.icon.isEmpty ? "⭐️" : page.icon)
+                                    .font(.system(size: 13))
+                                    .frame(width: 18)
+                                Text(page.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Theme.text)
+                                    .lineLimit(1)
+                            }
+                            .padding(.vertical, 3)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("Favorites").metaLabel()
+                }
+            }
             Section {
                 ForEach(rootNotebooks) { notebook in
                     NotebookRow(notebook: notebook, onRename: { renameTarget = $0 })
@@ -167,10 +198,15 @@ private struct SearchResultRow: View {
                 .fill(Theme.accent)
                 .frame(width: 3, height: 34)
             VStack(alignment: .leading, spacing: 3) {
-                Text(page.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.text)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    if !page.icon.isEmpty {
+                        Text(page.icon).font(.system(size: 13))
+                    }
+                    Text(page.title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                }
                 Text(page.notebook?.title ?? "No Notebook")
                     .metaLabel()
             }

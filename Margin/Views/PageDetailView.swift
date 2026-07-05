@@ -41,6 +41,8 @@ struct PageDetailView: View {
     }
     #endif
 
+    @State private var showingIconPicker = false
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -139,10 +141,32 @@ struct PageDetailView: View {
                 .overlay(alignment: .top) {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(page.title)
-                                .font(.editorialDisplay(34))
-                                .foregroundStyle(Theme.text)
-                                .lineLimit(3)
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Button {
+                                    showingIconPicker = true
+                                } label: {
+                                    if page.icon.isEmpty {
+                                        Image(systemName: "face.smiling")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(Theme.muted)
+                                            .frame(width: 34, height: 34)
+                                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                    .strokeBorder(Theme.border, lineWidth: 1)
+                                            )
+                                    } else {
+                                        Text(page.icon)
+                                            .font(.system(size: 34))
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Page Icon")
+                                Text(page.title)
+                                    .font(.editorialDisplay(34))
+                                    .foregroundStyle(Theme.text)
+                                    .lineLimit(3)
+                            }
                             AccentRule()
                             Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
                                 .metaLabel()
@@ -152,6 +176,12 @@ struct PageDetailView: View {
                         BlockListView(page: page)
                     }
                     .allowsHitTesting(mode == .edit)
+                    .sheet(isPresented: $showingIconPicker) {
+                        IconPickerView(current: page.icon) { emoji in
+                            page.icon = emoji
+                            page.updatedAt = Date()
+                        }
+                    }
                 }
                 .overlay {
                     InkCanvasView(

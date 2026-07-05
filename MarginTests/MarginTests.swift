@@ -313,6 +313,36 @@ struct MarginTests {
         }
     }
 
+    @Test func pageIconAndFavoriteDefaultsAndPersist() throws {
+        let context = try makeContext()
+        let page = Page()
+        context.insert(page)
+        try context.save()
+        #expect(page.icon.isEmpty)
+        #expect(page.isFavorite == false)
+
+        page.icon = "📚"
+        page.isFavorite = true
+        try context.save()
+
+        let favorites = try context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.isFavorite }))
+        #expect(favorites.count == 1)
+        #expect(favorites.first?.icon == "📚")
+    }
+
+    @Test func blockIndentLevelDefaultsToZeroAndPersists() throws {
+        let context = try makeContext()
+        let page = Page()
+        context.insert(page)
+        let block = Block(type: .bulletList, textContent: "nested", sortIndex: 0, page: page)
+        context.insert(block)
+        #expect(block.indentLevel == 0)
+        block.indentLevel = 2
+        try context.save()
+        let fetched = try context.fetch(FetchDescriptor<Block>()).first
+        #expect(fetched?.indentLevel == 2)
+    }
+
     #if os(iOS)
     @Test func pageExportsToValidPDF() throws {
         let context = try makeContext()

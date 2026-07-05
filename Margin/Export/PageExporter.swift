@@ -84,7 +84,7 @@ private struct PageExportContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(page.title)
+            Text(page.icon.isEmpty ? page.title : "\(page.icon) \(page.title)")
                 .font(.system(size: 28, weight: .heavy))
             Rectangle()
                 .fill(Color(red: 1, green: 0.35, blue: 0.12))
