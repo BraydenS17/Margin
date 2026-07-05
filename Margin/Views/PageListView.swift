@@ -82,6 +82,7 @@ struct PageListView: View {
                 FlatIconButton(systemName: "plus", label: "New Page") {
                     showingTemplatePicker = true
                 }
+                .keyboardShortcut("n", modifiers: .command)
                 .accessibilityIdentifier("New Page")
             }
             Text(notebook.title)
@@ -143,9 +144,15 @@ private struct PageRow: View {
 
     private var blockCount: Int { page.blocks?.count ?? 0 }
 
+    private var latestEdit: Date {
+        ((page.blocks ?? []).map(\.updatedAt) + [page.updatedAt]).max() ?? page.updatedAt
+    }
+
     private var meta: String {
-        let blocks = "\(blockCount) \(blockCount == 1 ? "block" : "blocks")"
-        return "\(blocks) · \(page.background.rawValue)"
+        var parts = ["\(blockCount) \(blockCount == 1 ? "block" : "blocks")", page.background.rawValue]
+        if page.inkData != nil { parts.append("ink") }
+        parts.append(latestEdit.formatted(.relative(presentation: .named)))
+        return parts.joined(separator: " · ")
     }
 
     var body: some View {

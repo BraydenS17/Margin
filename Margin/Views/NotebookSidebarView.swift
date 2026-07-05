@@ -9,6 +9,7 @@ struct NotebookSidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
     @State private var renameTarget: Notebook?
+    @State private var notebookPendingDelete: Notebook?
 
     private var rootNotebooks: [Notebook] {
         guard let workspace else { return [] }
@@ -31,7 +32,11 @@ struct NotebookSidebarView: View {
             brandHeader
             searchField
             if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-                notebookList
+                if rootNotebooks.isEmpty {
+                    firstNotebookCTA
+                } else {
+                    notebookList
+                }
             } else {
                 searchResultsList
             }
@@ -40,6 +45,25 @@ struct NotebookSidebarView: View {
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
+        .confirmationDialog(
+            "Delete \"\(notebookPendingDelete?.title ?? "")\"?",
+            isPresented: Binding(
+                get: { notebookPendingDelete != nil },
+                set: { if !$0 { notebookPendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Notebook", role: .destructive) {
+                if let notebook = notebookPendingDelete {
+                    modelContext.delete(notebook)
+                }
+                notebookPendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { notebookPendingDelete = nil }
+        } message: {
+            let count = notebookPendingDelete?.pages?.count ?? 0
+            Text("This also deletes its \(count) \(count == 1 ? "page" : "pages") and any sub-notebooks.")
+        }
     }
 
     private var notebookList: some View {
@@ -133,6 +157,7 @@ struct NotebookSidebarView: View {
                     .frame(width: 7, height: 7)
                 Spacer()
                 FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                     .accessibilityIdentifier("New Notebook")
             }
             AccentRule()
@@ -162,10 +187,33 @@ struct NotebookSidebarView: View {
         selectedNotebook = notebook
     }
 
+    /// Deleting a notebook cascades to all of its pages, so swipe-delete asks first.
     private func deleteNotebooks(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(rootNotebooks[index])
+        guard let index = offsets.first else { return }
+        notebookPendingDelete = rootNotebooks[index]
+    }
+
+    private var firstNotebookCTA: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Image(systemName: "book.closed")
+                .font(.system(size: 34))
+                .foregroundStyle(Theme.accent)
+            Text("No notebooks yet")
+                .font(.editorialDisplay(20))
+                .foregroundStyle(Theme.text)
+            Button(action: addNotebook) {
+                Text("Create your first notebook")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(Theme.accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            Spacer()
         }
+        .frame(maxWidth: .infinity)
     }
 }
 

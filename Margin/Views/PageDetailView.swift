@@ -69,7 +69,9 @@ struct PageDetailView: View {
         HStack(spacing: 10) {
             FlatIconButton(systemName: "sidebar.leading", label: "Toggle Panels") { toggleColumns() }
             FlatIconButton(systemName: "arrow.uturn.backward", label: "Undo", action: undo)
+                .keyboardShortcut("z", modifiers: .command)
             FlatIconButton(systemName: "arrow.uturn.forward", label: "Redo", action: redo)
+                .keyboardShortcut("z", modifiers: [.command, .shift])
             if page.background != .pdf {
                 FlatIconButton(
                     systemName: page.background.systemImage,
@@ -125,6 +127,7 @@ struct PageDetailView: View {
                         .background(mode == m ? Theme.accent : Color.clear, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(m == .edit ? "1" : "2", modifiers: .command)
             }
         }
         .padding(3)
