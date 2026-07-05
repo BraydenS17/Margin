@@ -46,7 +46,7 @@ struct NotebookSidebarView: View {
         List(selection: $selectedNotebook) {
             Section {
                 ForEach(rootNotebooks) { notebook in
-                    NotebookRow(notebook: notebook, onRename: { renameTarget = $0 })
+                    NotebookRow(notebook: notebook, onRename: { renameTarget = $0 }, onAddChild: addChildNotebook)
                 }
                 .onDelete(perform: deleteNotebooks)
             } header: {
@@ -144,6 +144,17 @@ struct NotebookSidebarView: View {
         .padding(.bottom, 16)
     }
 
+    private func addChildNotebook(under parent: Notebook) {
+        let child = Notebook(
+            title: "Untitled Notebook",
+            workspace: parent.workspace,
+            parent: parent,
+            sortIndex: parent.children?.count ?? 0
+        )
+        modelContext.insert(child)
+        selectedNotebook = child
+    }
+
     private func addNotebook() {
         guard let workspace else { return }
         let notebook = Notebook(workspace: workspace, sortIndex: rootNotebooks.count)
@@ -188,6 +199,7 @@ private struct SearchResultRow: View {
 private struct NotebookRow: View {
     @Bindable var notebook: Notebook
     var onRename: (Notebook) -> Void
+    var onAddChild: (Notebook) -> Void
 
     private var children: [Notebook] {
         (notebook.children ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -203,7 +215,7 @@ private struct NotebookRow: View {
         } else {
             DisclosureGroup {
                 ForEach(children) { child in
-                    NotebookRow(notebook: child, onRename: onRename)
+                    NotebookRow(notebook: child, onRename: onRename, onAddChild: onAddChild)
                 }
             } label: {
                 rowLabel.tag(notebook)
@@ -230,6 +242,7 @@ private struct NotebookRow: View {
         .padding(.vertical, 3)
         .contextMenu {
             Button("Rename", systemImage: "pencil") { onRename(notebook) }
+            Button("New Sub-notebook", systemImage: "plus.rectangle.on.folder") { onAddChild(notebook) }
         }
     }
 }
