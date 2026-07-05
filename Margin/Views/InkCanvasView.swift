@@ -49,6 +49,14 @@ final class InkUndoController {
     var redo: () -> Void = {}
 }
 
+/// What a Pencil double-tap/squeeze should do, derived from the user's system-level
+/// Apple Pencil preference (Settings > Apple Pencil) rather than hardcoded.
+enum PencilGestureAction {
+    case toggleEraser
+    case previousTool
+    case cycleColor
+}
+
 #if os(iOS)
 import PencilKit
 
@@ -72,6 +80,7 @@ struct InkCanvasView: UIViewRepresentable {
     var inputMode: InkInputMode
     @Binding var pencilDetected: Bool
     var undoController: InkUndoController
+    var onPencilGesture: (PencilGestureAction) -> Void = { _ in }
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PencilAwareCanvasView()
@@ -96,6 +105,10 @@ struct InkCanvasView: UIViewRepresentable {
             canvasView.becomeFirstResponder()
         }
 
+        let pencilInteraction = UIPencilInteraction()
+        pencilInteraction.delegate = context.coordinator
+        canvasView.addInteraction(pencilInteraction)
+
         context.coordinator.wireUndoController(canvasView: canvasView)
         return canvasView
     }
@@ -115,7 +128,7 @@ struct InkCanvasView: UIViewRepresentable {
         coordinator.saveNow(drawing: uiView.drawing)
     }
 
-    final class Coordinator: NSObject, PKCanvasViewDelegate {
+    final class Coordinator: NSObject, PKCanvasViewDelegate, UIPencilInteractionDelegate {
         var parent: InkCanvasView
         var saveWorkItem: DispatchWorkItem?
 
@@ -166,6 +179,30 @@ struct InkCanvasView: UIViewRepresentable {
             parent.undoController.undo = { [weak canvasView] in canvasView?.undoManager?.undo() }
             parent.undoController.redo = { [weak canvasView] in canvasView?.undoManager?.redo() }
         }
+
+        func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveTap tap: UIPencilInteraction.Tap) {
+            route(UIPencilInteraction.preferredTapAction)
+        }
+
+        func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze) {
+            guard squeeze.phase == .ended else { return }
+            route(UIPencilInteraction.preferredSqueezeAction)
+        }
+
+        private func route(_ preferred: UIPencilPreferredAction) {
+            switch preferred {
+            case .switchEraser:
+                parent.onPencilGesture(.toggleEraser)
+            case .switchPrevious:
+                parent.onPencilGesture(.previousTool)
+            case .showColorPalette, .showInkAttributes, .showContextualPalette:
+                // No system palette in our custom toolbar — cycling the color is the
+                // closest useful equivalent.
+                parent.onPencilGesture(.cycleColor)
+            default:
+                break
+            }
+        }
     }
 }
 #else
@@ -177,6 +214,7 @@ struct InkCanvasView: View {
     var inputMode: InkInputMode
     @Binding var pencilDetected: Bool
     var undoController: InkUndoController
+    var onPencilGesture: (PencilGestureAction) -> Void = { _ in }
 
     var body: some View {
         Text("Ink editing is only available on iOS/iPadOS")

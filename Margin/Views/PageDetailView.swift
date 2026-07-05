@@ -11,6 +11,7 @@ struct PageDetailView: View {
     @State private var inkColor: Color = .black
     @State private var inkWidth: CGFloat = 4
     @State private var inkUndoController = InkUndoController()
+    @State private var previousInkTool: InkToolKind = .pen
     @State private var pencilDetected = false
     @AppStorage("inkInputMode") private var inputModeRaw = InkInputMode.auto.rawValue
     #if os(iOS)
@@ -168,7 +169,8 @@ struct PageDetailView: View {
                         width: inkWidth,
                         inputMode: inputMode,
                         pencilDetected: $pencilDetected,
-                        undoController: inkUndoController
+                        undoController: inkUndoController,
+                        onPencilGesture: handlePencilGesture
                     )
                     // PageDetailView keeps the same view identity across page switches (it's
                     // reused at the same NavigationSplitView.detail slot), so without an
@@ -183,6 +185,31 @@ struct PageDetailView: View {
 
     private func toggleColumns() {
         columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+    }
+
+    private func handlePencilGesture(_ action: PencilGestureAction) {
+        // A Pencil gesture while typing means "I want to draw" — switch modes first.
+        guard mode == .draw else {
+            mode = .draw
+            return
+        }
+        switch action {
+        case .toggleEraser:
+            if inkTool == .eraser {
+                inkTool = previousInkTool
+            } else {
+                previousInkTool = inkTool
+                inkTool = .eraser
+            }
+        case .previousTool:
+            let current = inkTool
+            inkTool = previousInkTool
+            previousInkTool = current
+        case .cycleColor:
+            let palette = InkToolbar.palette
+            let index = palette.firstIndex(of: inkColor) ?? -1
+            inkColor = palette[(index + 1) % palette.count]
+        }
     }
 
     private func undo() {
