@@ -137,7 +137,14 @@ struct PageDetailView: View {
     }
 
     private var pageArea: some View {
-        ScrollView {
+        #if os(iOS)
+        ZoomablePageView { pageContent }
+        #else
+        ScrollView { pageContent }
+        #endif
+    }
+
+    private var pageContent: some View {
             pageBackground
                 .frame(minHeight: 1000)
                 .overlay(alignment: .top) {
@@ -180,7 +187,6 @@ struct PageDetailView: View {
                     .id(page.id)
                     .allowsHitTesting(mode == .draw)
                 }
-        }
     }
 
     private func toggleColumns() {

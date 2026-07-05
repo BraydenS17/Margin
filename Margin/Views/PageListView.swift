@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+#if os(iOS)
+import PencilKit
+#endif
 
 struct PageListView: View {
     @Bindable var notebook: Notebook
@@ -148,9 +151,18 @@ private struct PageRow: View {
         ((page.blocks ?? []).map(\.updatedAt) + [page.updatedAt]).max() ?? page.updatedAt
     }
 
+    private var hasInk: Bool {
+        #if os(iOS)
+        guard let data = page.inkData, let drawing = try? PKDrawing(data: data) else { return false }
+        return !drawing.strokes.isEmpty
+        #else
+        return page.inkData != nil
+        #endif
+    }
+
     private var meta: String {
         var parts = ["\(blockCount) \(blockCount == 1 ? "block" : "blocks")", page.background.rawValue]
-        if page.inkData != nil { parts.append("ink") }
+        if hasInk { parts.append("ink") }
         parts.append(latestEdit.formatted(.relative(presentation: .named)))
         return parts.joined(separator: " · ")
     }
