@@ -8,7 +8,8 @@ struct InkToolbar: View {
     @Binding var inputMode: InkInputMode
     var pencilDetected: Bool
 
-    private let palette: [Color] = [.black, Theme.accent, .red, .blue, .green, .purple]
+    static let palette: [Color] = [.black, Theme.accent, .red, .blue, .green, .purple]
+    private var palette: [Color] { Self.palette }
     private let widths: [CGFloat] = [2, 4, 9]
 
     var body: some View {
