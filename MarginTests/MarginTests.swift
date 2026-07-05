@@ -314,6 +314,73 @@ struct MarginTests {
     }
 
     #if os(iOS)
+    private func makeSamplePDF(pageCount: Int) -> Data {
+        let data = NSMutableData()
+        var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let consumer = CGDataConsumer(data: data)!
+        let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
+        for _ in 0..<pageCount {
+            context.beginPDFPage(nil)
+            context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+            context.fill(CGRect(x: 100, y: 100, width: 200, height: 200))
+            context.endPDFPage()
+        }
+        context.closePDF()
+        return data as Data
+    }
+
+    @Test func importingPDFCreatesAssetAndMappedPages() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Slides")
+        context.insert(notebook)
+        let existing = Page(title: "Existing", notebook: notebook, sortIndex: 0)
+        context.insert(existing)
+
+        let pdf = makeSamplePDF(pageCount: 3)
+        let imported = PDFImporter.importPDF(data: pdf, fileName: "lecture.pdf", into: notebook, context: context)
+        try context.save()
+
+        #expect(imported.count == 3)
+        let assets = try context.fetch(FetchDescriptor<PDFAsset>())
+        #expect(assets.count == 1)
+        #expect(assets.first?.pageCount == 3)
+        for (offset, page) in imported.enumerated() {
+            #expect(page.background == .pdf)
+            #expect(page.pdfPageIndex == offset)
+            #expect(page.pdfAsset === assets.first)
+            #expect(page.sortIndex == 1 + offset)
+            #expect(page.title.contains("lecture"))
+        }
+        #expect(PDFImporter.sourcePage(for: imported[1]) != nil)
+        #expect(PDFImporter.sourcePage(for: existing) == nil)
+    }
+
+    @Test func importedPDFPageExportsAnnotatedPDF() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Slides")
+        context.insert(notebook)
+        let pdf = makeSamplePDF(pageCount: 1)
+        let imported = PDFImporter.importPDF(data: pdf, fileName: "doc.pdf", into: notebook, context: context)
+        let page = try #require(imported.first)
+
+        let exported = try #require(PageExporter.pdfData(for: page))
+        let document = try #require(PDFDocument(data: exported))
+        #expect(document.pageCount == 1)
+        // Aspect ratio of the source page survives export.
+        let bounds = try #require(document.page(at: 0)).bounds(for: .mediaBox)
+        #expect(abs(bounds.width / bounds.height - 612.0 / 792.0) < 0.01)
+    }
+
+    @Test func rejectsInvalidPDFData() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Slides")
+        context.insert(notebook)
+        let imported = PDFImporter.importPDF(data: Data("not a pdf".utf8), fileName: "junk.pdf", into: notebook, context: context)
+        #expect(imported.isEmpty)
+        let assets = try context.fetch(FetchDescriptor<PDFAsset>())
+        #expect(assets.isEmpty)
+    }
+
     @Test func pageExportsToValidPDF() throws {
         let context = try makeContext()
         let notebook = Notebook(title: "Export")

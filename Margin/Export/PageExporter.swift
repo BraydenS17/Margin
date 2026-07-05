@@ -2,6 +2,7 @@ import SwiftUI
 
 #if os(iOS)
 import PencilKit
+import PDFKit
 import UIKit
 
 /// Renders a Page (blocks + ink, composited) into a single-page PDF.
@@ -17,6 +18,12 @@ enum PageExporter {
 
     static func pdfData(for page: Page) -> Data? {
         let drawing: PKDrawing? = page.inkData.flatMap { try? PKDrawing(data: $0) }
+
+        // Imported PDF pages export as the source page with ink composited on top —
+        // no synthetic title/blocks header defacing the original document.
+        if page.background == .pdf, let sourcePage = PDFImporter.sourcePage(for: page) {
+            return annotatedPDFData(sourcePage: sourcePage, drawing: drawing)
+        }
 
         let renderer = ImageRenderer(content: PageExportContent(page: page).frame(width: pageWidth))
         renderer.proposedSize = ProposedViewSize(width: pageWidth, height: nil)
@@ -56,6 +63,38 @@ enum PageExporter {
             context.closePDF()
         }
 
+        return pdfData.length > 0 ? pdfData as Data : nil
+    }
+
+    private static func annotatedPDFData(sourcePage: PDFPage, drawing: PKDrawing?) -> Data? {
+        let bounds = sourcePage.bounds(for: .mediaBox)
+        guard bounds.width > 0, bounds.height > 0 else { return nil }
+        let scale = pageWidth / bounds.width
+        var mediaBox = CGRect(x: 0, y: 0, width: pageWidth, height: bounds.height * scale)
+
+        let pdfData = NSMutableData()
+        guard let consumer = CGDataConsumer(data: pdfData),
+              let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else { return nil }
+
+        context.beginPDFPage(nil)
+        context.saveGState()
+        context.scaleBy(x: scale, y: scale)
+        sourcePage.draw(with: .mediaBox, to: context)
+        context.restoreGState()
+
+        if let drawing, !drawing.strokes.isEmpty {
+            let inkImage = drawing.image(from: CGRect(origin: .zero, size: mediaBox.size), scale: 2)
+            if let cgImage = inkImage.cgImage {
+                context.saveGState()
+                context.translateBy(x: 0, y: mediaBox.height)
+                context.scaleBy(x: 1, y: -1)
+                context.draw(cgImage, in: CGRect(origin: .zero, size: mediaBox.size))
+                context.restoreGState()
+            }
+        }
+
+        context.endPDFPage()
+        context.closePDF()
         return pdfData.length > 0 ? pdfData as Data : nil
     }
 
