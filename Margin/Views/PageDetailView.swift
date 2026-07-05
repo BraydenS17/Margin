@@ -137,21 +137,25 @@ struct PageDetailView: View {
             pageBackground
                 .frame(minHeight: 1000)
                 .overlay(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(page.title)
-                                .font(.editorialDisplay(34))
-                                .foregroundStyle(Theme.text)
-                                .lineLimit(3)
-                            AccentRule()
-                            Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
-                                .metaLabel()
+                    // Imported PDF pages are annotation-first: the document itself is the
+                    // content layer, so no typed title/blocks are drawn over it.
+                    if page.background != .pdf {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(page.title)
+                                    .font(.editorialDisplay(34))
+                                    .foregroundStyle(Theme.text)
+                                    .lineLimit(3)
+                                AccentRule()
+                                Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
+                                    .metaLabel()
+                            }
+                            .padding(.horizontal, 22)
+                            .padding(.top, 20)
+                            BlockListView(page: page)
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.top, 20)
-                        BlockListView(page: page)
+                        .allowsHitTesting(mode == .edit)
                     }
-                    .allowsHitTesting(mode == .edit)
                 }
                 .overlay {
                     InkCanvasView(
@@ -202,7 +206,7 @@ struct PageDetailView: View {
         case .grid:
             GridBackground()
         case .pdf:
-            Rectangle().fill(.quaternary)
+            PDFPageBackgroundView(page: page)
         }
     }
 }

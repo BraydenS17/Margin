@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct PageListView: View {
     @Bindable var notebook: Notebook
@@ -8,6 +9,7 @@ struct PageListView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingTemplatePicker = false
+    @State private var showingPDFImporter = false
     @State private var renameTarget: Page?
 
     private var pages: [Page] {
@@ -42,10 +44,28 @@ struct PageListView: View {
         .sheet(isPresented: $showingTemplatePicker) {
             TemplatePickerView(onSelect: addPage)
         }
+        .fileImporter(isPresented: $showingPDFImporter, allowedContentTypes: [.pdf]) { result in
+            guard case .success(let url) = result else { return }
+            importPDF(from: url)
+        }
         .renameAlert(item: $renameTarget, title: "Rename Page") { page, newTitle in
             page.title = newTitle
             page.updatedAt = Date()
         }
+    }
+
+    private func importPDF(from url: URL) {
+        // Files-app URLs are security-scoped; access must be balanced around the read.
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return }
+        let imported = PDFImporter.importPDF(
+            data: data,
+            fileName: url.lastPathComponent,
+            into: notebook,
+            context: modelContext
+        )
+        selectedPage = imported.first
     }
 
     private var header: some View {
@@ -55,6 +75,10 @@ struct PageListView: View {
                     columnVisibility = columnVisibility == .all ? .doubleColumn : .all
                 }
                 Spacer()
+                FlatIconButton(systemName: "arrow.down.doc", label: "Import PDF") {
+                    showingPDFImporter = true
+                }
+                .accessibilityIdentifier("Import PDF")
                 FlatIconButton(systemName: "plus", label: "New Page") {
                     showingTemplatePicker = true
                 }
