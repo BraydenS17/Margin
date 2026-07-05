@@ -172,7 +172,9 @@ struct InkCanvasView: UIViewRepresentable {
 
         func saveNow(drawing: PKDrawing) {
             saveWorkItem?.cancel()
-            parent.inkData = drawing.dataRepresentation()
+            // An empty drawing round-trips as ~40 bytes of non-nil data; storing nil instead
+            // keeps "has ink" checks (page rows, export) meaningful.
+            parent.inkData = drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
         }
 
         func wireUndoController(canvasView: PKCanvasView) {
