@@ -47,11 +47,22 @@ struct PageThumbnailView: View {
             guard let data = PageExporter.pdfData(for: page),
                   let document = PDFDocument(data: data),
                   let pdfPage = document.page(at: 0) else { return }
+            let bounds = pdfPage.bounds(for: .mediaBox)
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            // Draw the page ourselves instead of PDFPage.thumbnail(of:for:) — that ObjC API
+            // can bridge back a nil UIImage, which then crashes NSCache.setObject with
+            // NSInvalidArgumentException. UIGraphicsImageRenderer.image never returns nil.
             // 2x the display size so the thumbnail stays crisp on retina.
-            let rendered = pdfPage.thumbnail(
-                of: CGSize(width: Self.size.width * 2, height: Self.size.height * 2),
-                for: .mediaBox
-            )
+            let target = CGSize(width: Self.size.width * 2, height: Self.size.height * 2)
+            let scale = min(target.width / bounds.width, target.height / bounds.height)
+            let renderSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+            let rendered = UIGraphicsImageRenderer(size: renderSize).image { ctx in
+                UIColor.white.setFill()
+                ctx.fill(CGRect(origin: .zero, size: renderSize))
+                ctx.cgContext.translateBy(x: 0, y: renderSize.height)
+                ctx.cgContext.scaleBy(x: scale, y: -scale)
+                pdfPage.draw(with: .mediaBox, to: ctx.cgContext)
+            }
             Self.cache.setObject(rendered, forKey: cacheKey)
             image = rendered
         }
