@@ -56,6 +56,7 @@ struct RootView: View {
         guard workspaces.isEmpty else { return }
         modelContext.insert(Workspace())
     }
+
 }
 
 #Preview {
