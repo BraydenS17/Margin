@@ -11,6 +11,7 @@ struct PageDetailView: View {
     @State private var inkColor: Color = .black
     @State private var inkWidth: CGFloat = 4
     @State private var inkUndoController = InkUndoController()
+    @State private var previousInkTool: InkToolKind = .pen
     @State private var pencilDetected = false
     @AppStorage("inkInputMode") private var inputModeRaw = InkInputMode.auto.rawValue
     #if os(iOS)
@@ -71,7 +72,9 @@ struct PageDetailView: View {
         HStack(spacing: 10) {
             FlatIconButton(systemName: "sidebar.leading", label: "Toggle Panels") { toggleColumns() }
             FlatIconButton(systemName: "arrow.uturn.backward", label: "Undo", action: undo)
+                .keyboardShortcut("z", modifiers: .command)
             FlatIconButton(systemName: "arrow.uturn.forward", label: "Redo", action: redo)
+                .keyboardShortcut("z", modifiers: [.command, .shift])
             if page.background != .pdf {
                 FlatIconButton(
                     systemName: page.background.systemImage,
@@ -127,6 +130,7 @@ struct PageDetailView: View {
                         .background(mode == m ? Theme.accent : Color.clear, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(m == .edit ? "1" : "2", modifiers: .command)
             }
         }
         .padding(3)
@@ -135,51 +139,62 @@ struct PageDetailView: View {
     }
 
     private var pageArea: some View {
-        ScrollView {
+        #if os(iOS)
+        ZoomablePageView { pageContent }
+        #else
+        ScrollView { pageContent }
+        #endif
+    }
+
+    private var pageContent: some View {
             pageBackground
                 .frame(minHeight: 1000)
                 .overlay(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                Button {
-                                    showingIconPicker = true
-                                } label: {
-                                    if page.icon.isEmpty {
-                                        Image(systemName: "face.smiling")
-                                            .font(.system(size: 18))
-                                            .foregroundStyle(Theme.muted)
-                                            .frame(width: 34, height: 34)
-                                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                    .strokeBorder(Theme.border, lineWidth: 1)
-                                            )
-                                    } else {
-                                        Text(page.icon)
-                                            .font(.system(size: 34))
+                    // Imported PDF pages are annotation-first: the document itself is the
+                    // content layer, so no typed title/blocks are drawn over it.
+                    if page.background != .pdf {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                    Button {
+                                        showingIconPicker = true
+                                    } label: {
+                                        if page.icon.isEmpty {
+                                            Image(systemName: "face.smiling")
+                                                .font(.system(size: 18))
+                                                .foregroundStyle(Theme.muted)
+                                                .frame(width: 34, height: 34)
+                                                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                        .strokeBorder(Theme.border, lineWidth: 1)
+                                                )
+                                        } else {
+                                            Text(page.icon)
+                                                .font(.system(size: 34))
+                                        }
                                     }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Page Icon")
+                                    Text(page.title)
+                                        .font(.editorialDisplay(34))
+                                        .foregroundStyle(Theme.text)
+                                        .lineLimit(3)
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Page Icon")
-                                Text(page.title)
-                                    .font(.editorialDisplay(34))
-                                    .foregroundStyle(Theme.text)
-                                    .lineLimit(3)
+                                AccentRule()
+                                Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
+                                    .metaLabel()
                             }
-                            AccentRule()
-                            Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
-                                .metaLabel()
+                            .padding(.horizontal, 22)
+                            .padding(.top, 20)
+                            BlockListView(page: page)
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.top, 20)
-                        BlockListView(page: page)
-                    }
-                    .allowsHitTesting(mode == .edit)
-                    .sheet(isPresented: $showingIconPicker) {
-                        IconPickerView(current: page.icon) { emoji in
-                            page.icon = emoji
-                            page.updatedAt = Date()
+                        .allowsHitTesting(mode == .edit)
+                        .sheet(isPresented: $showingIconPicker) {
+                            IconPickerView(current: page.icon) { emoji in
+                                page.icon = emoji
+                                page.updatedAt = Date()
+                            }
                         }
                     }
                 }
@@ -191,7 +206,8 @@ struct PageDetailView: View {
                         width: inkWidth,
                         inputMode: inputMode,
                         pencilDetected: $pencilDetected,
-                        undoController: inkUndoController
+                        undoController: inkUndoController,
+                        onPencilGesture: handlePencilGesture
                     )
                     // PageDetailView keeps the same view identity across page switches (it's
                     // reused at the same NavigationSplitView.detail slot), so without an
@@ -201,11 +217,35 @@ struct PageDetailView: View {
                     .id(page.id)
                     .allowsHitTesting(mode == .draw)
                 }
-        }
     }
 
     private func toggleColumns() {
         columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+    }
+
+    private func handlePencilGesture(_ action: PencilGestureAction) {
+        // A Pencil gesture while typing means "I want to draw" — switch modes first.
+        guard mode == .draw else {
+            mode = .draw
+            return
+        }
+        switch action {
+        case .toggleEraser:
+            if inkTool == .eraser {
+                inkTool = previousInkTool
+            } else {
+                previousInkTool = inkTool
+                inkTool = .eraser
+            }
+        case .previousTool:
+            let current = inkTool
+            inkTool = previousInkTool
+            previousInkTool = current
+        case .cycleColor:
+            let palette = InkToolbar.palette
+            let index = palette.firstIndex(of: inkColor) ?? -1
+            inkColor = palette[(index + 1) % palette.count]
+        }
     }
 
     private func undo() {
@@ -232,7 +272,7 @@ struct PageDetailView: View {
         case .grid:
             GridBackground()
         case .pdf:
-            Rectangle().fill(.quaternary)
+            PDFPageBackgroundView(page: page)
         }
     }
 }

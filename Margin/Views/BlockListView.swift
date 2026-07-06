@@ -58,6 +58,10 @@ struct BlockListView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .scrollDisabled(true)
+                // Without this, List pads short rows up to its default minimum row height
+                // (~44pt) while the GeometryReader only measures the content — the summed
+                // frame then undercounts and the last row(s) clip under the add-block menu.
+                .environment(\.defaultMinListRowHeight, 1)
                 .frame(height: totalListHeight)
                 .onPreferenceChange(BlockHeightPreferenceKey.self) { rowHeights = $0 }
             }

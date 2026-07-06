@@ -45,15 +45,23 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - 18 unit tests (Swift Testing): model relationships, cascade deletes, `PageBackground`/`BlockType` raw-value round-tripping and fallback, table JSON round-tripping, template-to-block instantiation, PDF export validity.
 - Functional UI tests (XCTest): notebook creation, page creation, navigation.
 
+### M4 — PDF import & annotation (`feature/pdf-import`)
+- Import a PDF from Files; one `PDFAsset` + one Page per PDF page (background `.pdf`, `pdfPageIndex` mapping).
+- Pages render the source PDF page as a static rasterized background — the layer model stays identical to other pages, so ink annotation works unchanged and the spike's PDFView gesture-ownership risk is designed out entirely. Trade-off: no pinch-zoom in v1.
+- Export of an imported page produces the source PDF page with ink composited on top (aspect preserved).
+- Because no live PDFView is used, the on-device spike verification is no longer a gate; the `Spike/` prototype remains only as reference for a future zoomable viewer.
+
+### Sub-notebooks (`feature/sub-notebooks`)
+- "New Sub-notebook" in the notebook context menu — the nesting the model always supported, now creatable in UI.
+
 ## In progress / next up
 
-- **Real on-device verification of the PDF-over-ink spike** — 5 minutes with an iPad + Apple Pencil to confirm strokes stay crisp/aligned at zoom and Pencil-down never triggers PDF scroll. Gates the start of M4.
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
+- **`feature-overhaul` branch** (unmerged, per request): page icons, favorites, block "Turn Into"/duplicate/indent, page duplicate/move.
 
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)
 
-- **M4 — PDF import/annotation**: import a PDF, per-page ink overlay, annotated-PDF export. Blocked on the spike verification above.
-- **M5 — remaining polish**: reorder/move across notebooks, onboarding.
+- **M5 — remaining polish**: onboarding, pinch-zoom for PDF pages.
 - **M6 — Beta & monetize**: TestFlight, StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync.
 - **Real Notion-style databases**: custom properties (date/select/checkbox/text) on a live collection, with table/calendar/board views over that data — distinct from the static block-based templates shipped above. Explicitly scoped as a stretch goal, not required for v1; would be its own milestone if pursued.
 - **Image blocks**: currently a placeholder in the block editor, no picker/storage implemented.

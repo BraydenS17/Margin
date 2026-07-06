@@ -1,5 +1,9 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
+#if os(iOS)
+import PencilKit
+#endif
 
 struct PageListView: View {
     @Bindable var notebook: Notebook
@@ -8,6 +12,7 @@ struct PageListView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingTemplatePicker = false
+    @State private var showingPDFImporter = false
     @State private var renameTarget: Page?
 
     private var pages: [Page] {
@@ -59,10 +64,28 @@ struct PageListView: View {
         .sheet(isPresented: $showingTemplatePicker) {
             TemplatePickerView(onSelect: addPage)
         }
+        .fileImporter(isPresented: $showingPDFImporter, allowedContentTypes: [.pdf]) { result in
+            guard case .success(let url) = result else { return }
+            importPDF(from: url)
+        }
         .renameAlert(item: $renameTarget, title: "Rename Page") { page, newTitle in
             page.title = newTitle
             page.updatedAt = Date()
         }
+    }
+
+    private func importPDF(from url: URL) {
+        // Files-app URLs are security-scoped; access must be balanced around the read.
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return }
+        let imported = PDFImporter.importPDF(
+            data: data,
+            fileName: url.lastPathComponent,
+            into: notebook,
+            context: modelContext
+        )
+        selectedPage = imported.first
     }
 
     private var header: some View {
@@ -72,9 +95,14 @@ struct PageListView: View {
                     columnVisibility = columnVisibility == .all ? .doubleColumn : .all
                 }
                 Spacer()
+                FlatIconButton(systemName: "arrow.down.doc", label: "Import PDF") {
+                    showingPDFImporter = true
+                }
+                .accessibilityIdentifier("Import PDF")
                 FlatIconButton(systemName: "plus", label: "New Page") {
                     showingTemplatePicker = true
                 }
+                .keyboardShortcut("n", modifiers: .command)
                 .accessibilityIdentifier("New Page")
             }
             Text(notebook.title)
@@ -185,9 +213,24 @@ private struct PageRow: View {
 
     private var blockCount: Int { page.blocks?.count ?? 0 }
 
+    private var latestEdit: Date {
+        ((page.blocks ?? []).map(\.updatedAt) + [page.updatedAt]).max() ?? page.updatedAt
+    }
+
+    private var hasInk: Bool {
+        #if os(iOS)
+        guard let data = page.inkData, let drawing = try? PKDrawing(data: data) else { return false }
+        return !drawing.strokes.isEmpty
+        #else
+        return page.inkData != nil
+        #endif
+    }
+
     private var meta: String {
-        let blocks = "\(blockCount) \(blockCount == 1 ? "block" : "blocks")"
-        return "\(blocks) · \(page.background.rawValue)"
+        var parts = ["\(blockCount) \(blockCount == 1 ? "block" : "blocks")", page.background.rawValue]
+        if hasInk { parts.append("ink") }
+        parts.append(latestEdit.formatted(.relative(presentation: .named)))
+        return parts.joined(separator: " · ")
     }
 
     var body: some View {

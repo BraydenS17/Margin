@@ -38,6 +38,11 @@ struct RootView: View {
         }
         .tint(Theme.accent)
         .onAppear(perform: ensureWorkspaceExists)
+        .onChange(of: selectedNotebook) { _, notebook in
+            // Jump straight into the notebook's first page instead of leaving the detail
+            // column empty (or showing a page from the previously selected notebook).
+            selectedPage = notebook?.pages?.sorted { $0.sortIndex < $1.sortIndex }.first
+        }
         #if DEBUG
         .toolbar {
             ToolbarItem(placement: .navigation) {

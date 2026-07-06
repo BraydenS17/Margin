@@ -9,6 +9,7 @@ struct NotebookSidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
     @State private var renameTarget: Notebook?
+    @State private var notebookPendingDelete: Notebook?
 
     private var rootNotebooks: [Notebook] {
         guard let workspace else { return [] }
@@ -31,7 +32,11 @@ struct NotebookSidebarView: View {
             brandHeader
             searchField
             if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-                notebookList
+                if rootNotebooks.isEmpty {
+                    firstNotebookCTA
+                } else {
+                    notebookList
+                }
             } else {
                 searchResultsList
             }
@@ -40,6 +45,25 @@ struct NotebookSidebarView: View {
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
+        .confirmationDialog(
+            "Delete \"\(notebookPendingDelete?.title ?? "")\"?",
+            isPresented: Binding(
+                get: { notebookPendingDelete != nil },
+                set: { if !$0 { notebookPendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Notebook", role: .destructive) {
+                if let notebook = notebookPendingDelete {
+                    modelContext.delete(notebook)
+                }
+                notebookPendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { notebookPendingDelete = nil }
+        } message: {
+            let count = notebookPendingDelete?.pages?.count ?? 0
+            Text("This also deletes its \(count) \(count == 1 ? "page" : "pages") and any sub-notebooks.")
+        }
     }
 
     private var favoritePages: [Page] {
@@ -77,7 +101,7 @@ struct NotebookSidebarView: View {
             }
             Section {
                 ForEach(rootNotebooks) { notebook in
-                    NotebookRow(notebook: notebook, onRename: { renameTarget = $0 })
+                    NotebookRow(notebook: notebook, onRename: { renameTarget = $0 }, onAddChild: addChildNotebook)
                 }
                 .onDelete(perform: deleteNotebooks)
             } header: {
@@ -164,6 +188,7 @@ struct NotebookSidebarView: View {
                     .frame(width: 7, height: 7)
                 Spacer()
                 FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                     .accessibilityIdentifier("New Notebook")
             }
             AccentRule()
@@ -175,6 +200,17 @@ struct NotebookSidebarView: View {
         .padding(.bottom, 16)
     }
 
+    private func addChildNotebook(under parent: Notebook) {
+        let child = Notebook(
+            title: "Untitled Notebook",
+            workspace: parent.workspace,
+            parent: parent,
+            sortIndex: parent.children?.count ?? 0
+        )
+        modelContext.insert(child)
+        selectedNotebook = child
+    }
+
     private func addNotebook() {
         guard let workspace else { return }
         let notebook = Notebook(workspace: workspace, sortIndex: rootNotebooks.count)
@@ -182,10 +218,33 @@ struct NotebookSidebarView: View {
         selectedNotebook = notebook
     }
 
+    /// Deleting a notebook cascades to all of its pages, so swipe-delete asks first.
     private func deleteNotebooks(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(rootNotebooks[index])
+        guard let index = offsets.first else { return }
+        notebookPendingDelete = rootNotebooks[index]
+    }
+
+    private var firstNotebookCTA: some View {
+        VStack(spacing: 14) {
+            Spacer()
+            Image(systemName: "book.closed")
+                .font(.system(size: 34))
+                .foregroundStyle(Theme.accent)
+            Text("No notebooks yet")
+                .font(.editorialDisplay(20))
+                .foregroundStyle(Theme.text)
+            Button(action: addNotebook) {
+                Text("Create your first notebook")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(Theme.accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            Spacer()
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -224,6 +283,7 @@ private struct SearchResultRow: View {
 private struct NotebookRow: View {
     @Bindable var notebook: Notebook
     var onRename: (Notebook) -> Void
+    var onAddChild: (Notebook) -> Void
 
     private var children: [Notebook] {
         (notebook.children ?? []).sorted { $0.sortIndex < $1.sortIndex }
@@ -239,7 +299,7 @@ private struct NotebookRow: View {
         } else {
             DisclosureGroup {
                 ForEach(children) { child in
-                    NotebookRow(notebook: child, onRename: onRename)
+                    NotebookRow(notebook: child, onRename: onRename, onAddChild: onAddChild)
                 }
             } label: {
                 rowLabel.tag(notebook)
@@ -266,6 +326,7 @@ private struct NotebookRow: View {
         .padding(.vertical, 3)
         .contextMenu {
             Button("Rename", systemImage: "pencil") { onRename(notebook) }
+            Button("New Sub-notebook", systemImage: "plus.rectangle.on.folder") { onAddChild(notebook) }
         }
     }
 }
