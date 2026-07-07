@@ -4,10 +4,32 @@ struct BlockRowView: View {
     @Bindable var block: Block
     var numberedListIndex: Int = 1
     var onDelete: () -> Void
+    var onDuplicate: () -> Void = {}
+
+    private static let maxIndent = 4
+    private static let indentStep: CGFloat = 24
 
     var body: some View {
         content
+            .padding(.leading, CGFloat(min(block.indentLevel, Self.maxIndent)) * Self.indentStep)
             .contextMenu {
+                Menu("Turn Into", systemImage: "arrow.triangle.2.circlepath") {
+                    ForEach(BlockType.allCases.filter { $0 != block.type && $0 != .image }, id: \.self) { type in
+                        Button {
+                            block.type = type
+                            block.updatedAt = Date()
+                        } label: {
+                            Label(type.displayName, systemImage: type.systemImage)
+                        }
+                    }
+                }
+                Button("Duplicate", systemImage: "plus.square.on.square", action: onDuplicate)
+                if block.indentLevel < Self.maxIndent {
+                    Button("Indent", systemImage: "increase.indent") { block.indentLevel += 1 }
+                }
+                if block.indentLevel > 0 {
+                    Button("Outdent", systemImage: "decrease.indent") { block.indentLevel -= 1 }
+                }
                 Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
             }
     }

@@ -9,6 +9,10 @@ final class Page {
     var updatedAt: Date = Date()
     var sortIndex: Int = 0
 
+    // Emoji shown next to the title; empty string means no icon.
+    var icon: String = ""
+    var isFavorite: Bool = false
+
     // Stored as a raw String (not the enum) for CloudKit compatibility; use `background`.
     var backgroundRaw: String = PageBackground.blank.rawValue
 
