@@ -26,7 +26,7 @@ struct BlockListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if blocks.isEmpty {
-                Text("Tap + to add content")
+                Text("Use + in the top bar to add content")
                     .font(.callout)
                     .foregroundStyle(.tertiary)
                     .padding(.vertical, 20)
@@ -64,50 +64,12 @@ struct BlockListView: View {
                 .frame(height: totalListHeight)
                 .onPreferenceChange(BlockHeightPreferenceKey.self) { rowHeights = $0 }
             }
-            addBlockMenu
         }
         .padding(.horizontal)
         .padding(.bottom, 60)
     }
 
-    private var addBlockMenu: some View {
-        Menu {
-            Section("Text") {
-                addButton(.heading)
-                addButton(.paragraph)
-                addButton(.quote)
-                addButton(.callout)
-            }
-            Section("Lists") {
-                addButton(.bulletList)
-                addButton(.numberedList)
-                addButton(.checkbox)
-            }
-            Section("Structure") {
-                addButton(.table)
-                addButton(.image)
-                addButton(.divider)
-            }
-        } label: {
-            Label("Add Block", systemImage: "plus.circle.fill")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.top, 10)
-    }
 
-    private func addButton(_ type: BlockType) -> some View {
-        Button {
-            addBlock(type: type)
-        } label: {
-            Label(type.displayName, systemImage: type.systemImage)
-        }
-    }
-
-    private func addBlock(type: BlockType) {
-        let block = Block(type: type, sortIndex: blocks.count, page: page)
-        modelContext.insert(block)
-    }
 
     private func delete(_ block: Block) {
         modelContext.delete(block)

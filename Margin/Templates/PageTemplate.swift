@@ -25,6 +25,17 @@ extension PageTemplate {
         blockSpecs: []
     )
 
+    static let quickNotes = PageTemplate(
+        name: "Notes",
+        description: "A clean ruled page ready for note-taking",
+        systemImage: "note.text",
+        background: .ruled,
+        blockSpecs: [
+            BlockSpec(type: .heading, text: "Notes"),
+            BlockSpec(type: .paragraph),
+        ]
+    )
+
     static let dayPlanner = PageTemplate(
         name: "Day Planner",
         description: "Hourly schedule with top priorities and notes",
@@ -150,6 +161,7 @@ extension PageTemplate {
 
     static let all: [PageTemplate] = [
         .blank,
+        .quickNotes,
         .dayPlanner,
         .courseLandingPage,
         .weeklyStudyPlanner,

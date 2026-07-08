@@ -156,7 +156,9 @@ struct InkCanvasView: UIViewRepresentable {
             case .marker:
                 return PKInkingTool(.marker, color: UIColor(parent.color), width: parent.width * 3)
             case .eraser:
-                return PKEraserTool(.bitmap)
+                // Width dots drive the eraser too — scaled up so the largest setting
+                // erases broad areas instead of pixel-picking.
+                return PKEraserTool(.bitmap, width: parent.width * 5)
             }
         }
 

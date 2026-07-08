@@ -10,7 +10,7 @@ struct InkToolbar: View {
 
     static let palette: [Color] = [.black, Theme.accent, .red, .blue, .green, .purple]
     private var palette: [Color] { Self.palette }
-    private let widths: [CGFloat] = [2, 4, 9]
+    private let widths: [CGFloat] = [2, 4, 9, 16, 28]
 
     var body: some View {
         VStack(spacing: 8) {
@@ -125,8 +125,8 @@ struct InkToolbar: View {
         } label: {
             Circle()
                 .fill(selected ? Theme.accent : Theme.muted)
-                .frame(width: w + 6, height: w + 6)
-                .frame(width: 30, height: 30)
+                .frame(width: min(w + 6, 26), height: min(w + 6, 26))
+                .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
