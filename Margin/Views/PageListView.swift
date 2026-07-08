@@ -31,6 +31,23 @@ struct PageListView: View {
                             .tag(page)
                             .contextMenu {
                                 Button("Rename", systemImage: "pencil") { renameTarget = page }
+                                Button(
+                                    page.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                                    systemImage: page.isFavorite ? "star.slash" : "star"
+                                ) {
+                                    page.isFavorite.toggle()
+                                    page.updatedAt = Date()
+                                }
+                                Button("Duplicate", systemImage: "plus.square.on.square") {
+                                    duplicate(page)
+                                }
+                                if otherNotebooks.count > 0 {
+                                    Menu("Move To", systemImage: "folder") {
+                                        ForEach(otherNotebooks) { destination in
+                                            Button(destination.title) { move(page, to: destination) }
+                                        }
+                                    }
+                                }
                             }
                     }
                     .onDelete(perform: deletePages)
@@ -140,6 +157,55 @@ struct PageListView: View {
             modelContext.delete(pages[index])
         }
     }
+
+    /// Sibling notebooks a page could move to (flattened, excluding the current one).
+    private var otherNotebooks: [Notebook] {
+        guard let workspace = notebook.workspace else { return [] }
+        var result: [Notebook] = []
+        func collect(_ notebooks: [Notebook]) {
+            for nb in notebooks.sorted(by: { $0.sortIndex < $1.sortIndex }) {
+                if nb !== notebook { result.append(nb) }
+                collect(nb.children ?? [])
+            }
+        }
+        collect((workspace.notebooks ?? []).filter { $0.parent == nil })
+        return result
+    }
+
+    private func duplicate(_ page: Page) {
+        let copy = Page(
+            title: "\(page.title) Copy",
+            notebook: notebook,
+            background: page.background,
+            sortIndex: page.sortIndex + 1
+        )
+        copy.icon = page.icon
+        copy.inkData = page.inkData
+        modelContext.insert(copy)
+        for block in (page.blocks ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
+            let blockCopy = Block(
+                type: block.type,
+                textContent: block.textContent,
+                sortIndex: block.sortIndex,
+                page: copy
+            )
+            blockCopy.isChecked = block.isChecked
+            blockCopy.indentLevel = block.indentLevel
+            blockCopy.tableData = block.tableData
+            modelContext.insert(blockCopy)
+        }
+        for (index, sibling) in pages.enumerated() {
+            sibling.sortIndex = index >= copy.sortIndex ? index + 1 : index
+        }
+        selectedPage = copy
+    }
+
+    private func move(_ page: Page, to destination: Notebook) {
+        if selectedPage === page { selectedPage = nil }
+        page.notebook = destination
+        page.sortIndex = destination.pages?.count ?? 0
+        page.updatedAt = Date()
+    }
 }
 
 private struct PageRow: View {
@@ -174,10 +240,20 @@ private struct PageRow: View {
                 .frame(width: 3, height: 46)
             PageThumbnailView(page: page)
             VStack(alignment: .leading, spacing: 4) {
-                Text(page.title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Theme.text)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    if !page.icon.isEmpty {
+                        Text(page.icon).font(.system(size: 15))
+                    }
+                    Text(page.title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                    if page.isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
                 Text(meta)
                     .metaLabel()
             }

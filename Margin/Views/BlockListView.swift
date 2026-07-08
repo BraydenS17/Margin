@@ -36,7 +36,8 @@ struct BlockListView: View {
                         BlockRowView(
                             block: block,
                             numberedListIndex: numberedListIndex(for: block),
-                            onDelete: { delete(block) }
+                            onDelete: { delete(block) },
+                            onDuplicate: { duplicate(block) }
                         )
                         .padding(.vertical, 3)
                         .background(
@@ -74,6 +75,17 @@ struct BlockListView: View {
     private func delete(_ block: Block) {
         modelContext.delete(block)
         renumber()
+    }
+
+    private func duplicate(_ block: Block) {
+        let copy = Block(type: block.type, textContent: block.textContent, sortIndex: block.sortIndex + 1, page: page)
+        copy.isChecked = block.isChecked
+        copy.indentLevel = block.indentLevel
+        copy.tableData = block.tableData
+        for sibling in blocks where sibling.sortIndex > block.sortIndex {
+            sibling.sortIndex += 1
+        }
+        modelContext.insert(copy)
     }
 
     private func deleteBlocks(at offsets: IndexSet) {

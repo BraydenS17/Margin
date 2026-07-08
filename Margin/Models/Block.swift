@@ -11,6 +11,8 @@ final class Block {
     var sortIndex: Int = 0
     var textContent: String = ""
     var isChecked: Bool = false
+    // Nesting depth for list-style blocks (0 = top level), clamped in the UI.
+    var indentLevel: Int = 0
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
