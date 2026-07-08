@@ -83,6 +83,9 @@ struct PageDetailView: View {
             #if os(iOS)
             FlatIconButton(systemName: "square.and.arrow.up", label: "Export PDF", action: exportPDF)
             #endif
+            if mode == .edit && page.background != .pdf {
+                addBlockMenu
+            }
             Spacer()
             modeToggle
         }
@@ -187,6 +190,47 @@ struct PageDetailView: View {
                     .id(page.id)
                     .allowsHitTesting(mode == .draw)
                 }
+    }
+
+    private var addBlockMenu: some View {
+        Menu {
+            Section("Text") {
+                addBlockButton(.heading)
+                addBlockButton(.paragraph)
+                addBlockButton(.quote)
+                addBlockButton(.callout)
+            }
+            Section("Lists") {
+                addBlockButton(.bulletList)
+                addBlockButton(.numberedList)
+                addBlockButton(.checkbox)
+            }
+            Section("Structure") {
+                addBlockButton(.table)
+                addBlockButton(.image)
+                addBlockButton(.divider)
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 36, height: 34)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
+        }
+        .accessibilityLabel("Add Block")
+    }
+
+    private func addBlockButton(_ type: BlockType) -> some View {
+        Button {
+            let count = page.blocks?.count ?? 0
+            modelContext.insert(Block(type: type, sortIndex: count, page: page))
+        } label: {
+            Label(type.displayName, systemImage: type.systemImage)
+        }
     }
 
     private func toggleColumns() {
