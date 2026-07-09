@@ -5,6 +5,7 @@ struct NotebookSidebarView: View {
     let workspace: Workspace?
     @Binding var selectedNotebook: Notebook?
     @Binding var selectedPage: Page?
+    var onExitToLibrary: () -> Void = {}
 
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
@@ -179,6 +180,7 @@ struct NotebookSidebarView: View {
     private var brandHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
+                FlatIconButton(systemName: "books.vertical", label: "Back to Library", action: onExitToLibrary)
                 Text("MARGIN")
                     .font(.editorialDisplay(26))
                     .tracking(1)

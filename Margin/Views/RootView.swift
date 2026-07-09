@@ -7,14 +7,45 @@ struct RootView: View {
 
     @State private var selectedNotebook: Notebook?
     @State private var selectedPage: Page?
+    @State private var isInLibrary = true
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     #if DEBUG
     @State private var showPDFInkSpike = false
     #endif
 
     var body: some View {
+        Group {
+            if isInLibrary {
+                LibraryView(workspace: workspaces.first) { notebook, page in
+                    selectedNotebook = notebook
+                    selectedPage = page
+                    withAnimation(.snappy) { isInLibrary = false }
+                }
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            } else {
+                notesWorkspace
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .tint(Theme.accent)
+        .onAppear(perform: ensureWorkspaceExists)
+        #if DEBUG
+        .sheet(isPresented: $showPDFInkSpike) {
+            NavigationStack { PDFInkSpikeView() }
+        }
+        #endif
+    }
+
+    private var notesWorkspace: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            NotebookSidebarView(workspace: workspaces.first, selectedNotebook: $selectedNotebook, selectedPage: $selectedPage)
+            NotebookSidebarView(
+                workspace: workspaces.first,
+                selectedNotebook: $selectedNotebook,
+                selectedPage: $selectedPage,
+                onExitToLibrary: {
+                    withAnimation(.snappy) { isInLibrary = true }
+                }
+            )
         } content: {
             if let notebook = selectedNotebook {
                 PageListView(notebook: notebook, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
@@ -36,8 +67,6 @@ struct RootView: View {
                 )
             }
         }
-        .tint(Theme.accent)
-        .onAppear(perform: ensureWorkspaceExists)
         .onChange(of: selectedNotebook) { _, notebook in
             // Jump straight into the notebook's first page instead of leaving the detail
             // column empty (or showing a page from the previously selected notebook).
@@ -50,9 +79,6 @@ struct RootView: View {
                     showPDFInkSpike = true
                 }
             }
-        }
-        .sheet(isPresented: $showPDFInkSpike) {
-            NavigationStack { PDFInkSpikeView() }
         }
         #endif
     }
