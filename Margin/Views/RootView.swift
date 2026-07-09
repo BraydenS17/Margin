@@ -58,7 +58,7 @@ struct RootView: View {
             }
         } detail: {
             if let page = selectedPage {
-                PageDetailView(page: page, columnVisibility: $columnVisibility)
+                PageDetailView(page: page, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
             } else {
                 EditorialEmptyState(
                     systemImage: "doc.text",

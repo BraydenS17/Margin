@@ -9,6 +9,9 @@ final class Notebook {
     var updatedAt: Date = Date()
     var sortIndex: Int = 0
 
+    // Stored as a raw String (not the enum) for CloudKit compatibility; use `color`.
+    var colorRaw: String = NotebookColor.orange.rawValue
+
     var workspace: Workspace?
     var parent: Notebook?
 
@@ -31,5 +34,10 @@ final class Notebook {
         self.sortIndex = sortIndex
         self.workspace = workspace
         self.parent = parent
+    }
+
+    var color: NotebookColor {
+        get { NotebookColor(rawValue: colorRaw) ?? .orange }
+        set { colorRaw = newValue.rawValue }
     }
 }
