@@ -4,6 +4,7 @@ enum PageBackground: String, CaseIterable {
     case blank
     case ruled
     case grid
+    case dotted
     case pdf
 
     var displayName: String {
@@ -11,6 +12,7 @@ enum PageBackground: String, CaseIterable {
         case .blank: return "Blank"
         case .ruled: return "Ruled"
         case .grid: return "Grid"
+        case .dotted: return "Dotted"
         case .pdf: return "PDF"
         }
     }
@@ -20,13 +22,14 @@ enum PageBackground: String, CaseIterable {
         case .blank: return "rectangle"
         case .ruled: return "text.justify"
         case .grid: return "grid"
+        case .dotted: return "circle.grid.3x3"
         case .pdf: return "doc.richtext"
         }
     }
 
     /// Backgrounds a user can freely switch between. `.pdf` is excluded — it's set by
     /// PDF import and switching away/into it by hand would orphan the page/PDF mapping.
-    static var selectable: [PageBackground] { [.blank, .ruled, .grid] }
+    static var selectable: [PageBackground] { [.blank, .ruled, .grid, .dotted] }
 }
 
 enum BlockType: String, CaseIterable {
@@ -68,6 +71,26 @@ enum BlockType: String, CaseIterable {
         case .callout: return "lightbulb"
         case .quote: return "quote.opening"
         case .table: return "tablecells"
+        }
+    }
+}
+
+enum NotebookColor: String, CaseIterable {
+    case orange
+    case ocean
+    case forest
+    case plum
+    case crimson
+    case graphite
+
+    var displayName: String {
+        switch self {
+        case .orange: return "Orange"
+        case .ocean: return "Ocean"
+        case .forest: return "Forest"
+        case .plum: return "Plum"
+        case .crimson: return "Crimson"
+        case .graphite: return "Graphite"
         }
     }
 }

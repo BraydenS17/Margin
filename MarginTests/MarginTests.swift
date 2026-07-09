@@ -343,6 +343,27 @@ struct MarginTests {
         #expect(fetched?.indentLevel == 2)
     }
 
+    @Test func notebookColorDefaultsAndRoundTrips() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Colored")
+        context.insert(notebook)
+        #expect(notebook.color == .orange)
+        notebook.color = .ocean
+        try context.save()
+        #expect(notebook.colorRaw == "ocean")
+        notebook.colorRaw = "garbage"
+        #expect(notebook.color == .orange)
+    }
+
+    @Test func dottedBackgroundRoundTrips() throws {
+        let context = try makeContext()
+        let page = Page(title: "Dots", background: .dotted)
+        context.insert(page)
+        try context.save()
+        #expect(page.backgroundRaw == "dotted")
+        #expect(PageBackground.selectable.contains(.dotted))
+    }
+
     #if os(iOS)
     private func makeSamplePDF(pageCount: Int) -> Data {
         let data = NSMutableData()

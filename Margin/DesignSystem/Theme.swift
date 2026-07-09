@@ -16,6 +16,20 @@ enum Theme {
     }
 }
 
+extension NotebookColor {
+    /// Cover/spine tint for a notebook, tuned to sit with the editorial palette.
+    var swatch: Color {
+        switch self {
+        case .orange: return Theme.accent
+        case .ocean: return Color(red: 0.12, green: 0.42, blue: 0.78)
+        case .forest: return Color(red: 0.13, green: 0.48, blue: 0.32)
+        case .plum: return Color(red: 0.45, green: 0.25, blue: 0.63)
+        case .crimson: return Color(red: 0.78, green: 0.16, blue: 0.22)
+        case .graphite: return Color(red: 0.35, green: 0.35, blue: 0.38)
+        }
+    }
+}
+
 extension Font {
     /// Big, confident heading — heavy weight, tight tracking.
     static func editorialDisplay(_ size: CGFloat) -> Font {

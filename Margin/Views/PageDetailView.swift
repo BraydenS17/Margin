@@ -3,6 +3,7 @@ import SwiftData
 
 struct PageDetailView: View {
     @Bindable var page: Page
+    var selectedPage: Binding<Page?>? = nil
     @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
 
@@ -88,6 +89,8 @@ struct PageDetailView: View {
             if mode == .edit && page.background != .pdf {
                 addBlockMenu
             }
+            Spacer()
+            pageNavigator
             Spacer()
             modeToggle
         }
@@ -263,6 +266,42 @@ struct PageDetailView: View {
         }
     }
 
+    private var siblingPages: [Page] {
+        (page.notebook?.pages ?? []).sorted { $0.sortIndex < $1.sortIndex }
+    }
+
+    /// Flip between a notebook's pages like sheets of paper. Flipping forward past the
+    /// last page starts a fresh blank one, so writing never dead-ends.
+    @ViewBuilder
+    private var pageNavigator: some View {
+        if let selectedPage {
+            let pages = siblingPages
+            let index = pages.firstIndex(where: { $0.id == page.id }) ?? 0
+            HStack(spacing: 10) {
+                FlatIconButton(systemName: "chevron.left", label: "Previous Page") {
+                    guard index > 0 else { return }
+                    selectedPage.wrappedValue = pages[index - 1]
+                }
+                .opacity(index > 0 ? 1 : 0.35)
+                Text("PAGE \(index + 1) OF \(pages.count)")
+                    .metaLabel()
+                    .fixedSize()
+                FlatIconButton(
+                    systemName: index < pages.count - 1 ? "chevron.right" : "plus.square.on.square.dashed",
+                    label: index < pages.count - 1 ? "Next Page" : "New Page at End"
+                ) {
+                    if index < pages.count - 1 {
+                        selectedPage.wrappedValue = pages[index + 1]
+                    } else if let notebook = page.notebook {
+                        let fresh = Page(title: "Untitled Page", notebook: notebook, background: page.background, sortIndex: pages.count)
+                        modelContext.insert(fresh)
+                        selectedPage.wrappedValue = fresh
+                    }
+                }
+            }
+        }
+    }
+
     private func toggleColumns() {
         columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
     }
@@ -315,6 +354,8 @@ struct PageDetailView: View {
             RuledBackground()
         case .grid:
             GridBackground()
+        case .dotted:
+            DottedBackground()
         case .pdf:
             PDFPageBackgroundView(page: page)
         }
@@ -356,6 +397,25 @@ private struct GridBackground: View {
                 path.move(to: CGPoint(x: 0, y: y))
                 path.addLine(to: CGPoint(x: size.width, y: y))
                 context.stroke(path, with: .color(.gray.opacity(0.2)), lineWidth: 1)
+                y += spacing
+            }
+        }
+        .background(Theme.background)
+    }
+}
+
+private struct DottedBackground: View {
+    var body: some View {
+        Canvas { context, size in
+            let spacing: CGFloat = 26
+            var y: CGFloat = spacing
+            while y < size.height {
+                var x: CGFloat = spacing
+                while x < size.width {
+                    let dot = CGRect(x: x - 1, y: y - 1, width: 2.4, height: 2.4)
+                    context.fill(Path(ellipseIn: dot), with: .color(.gray.opacity(0.35)))
+                    x += spacing
+                }
                 y += spacing
             }
         }

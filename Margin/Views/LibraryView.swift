@@ -19,6 +19,14 @@ struct LibraryView: View {
             .sorted { $0.sortIndex < $1.sortIndex }
     }
 
+    private var recentPages: [Page] {
+        let pages = (try? modelContext.fetch(FetchDescriptor<Page>())) ?? []
+        return pages
+            .filter { !($0.blocks ?? []).isEmpty || $0.inkData != nil }
+            .sorted { $0.updatedAt > $1.updatedAt }
+            .prefix(4).map { $0 }
+    }
+
     private var favoritePages: [Page] {
         let descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.isFavorite })
         return ((try? modelContext.fetch(descriptor)) ?? [])
@@ -45,8 +53,11 @@ struct LibraryView: View {
                 if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
                     searchResultsList
                 } else {
+                    if !recentPages.isEmpty {
+                        pageRow(title: "Jump Back In", pages: recentPages)
+                    }
                     if !favoritePages.isEmpty {
-                        favoritesRow
+                        pageRow(title: "Favorites", pages: favoritePages)
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
@@ -190,19 +201,19 @@ struct LibraryView: View {
         }
     }
 
-    private var favoritesRow: some View {
+    private func pageRow(title: String, pages: [Page]) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Favorites").metaLabel()
+            Text(title).metaLabel()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(favoritePages) { page in
+                    ForEach(pages) { page in
                         Button {
                             if let notebook = page.notebook {
                                 onOpen(notebook, page)
                             }
                         } label: {
                             HStack(spacing: 9) {
-                                Text(page.icon.isEmpty ? "⭐️" : page.icon)
+                                Text(page.icon.isEmpty ? "📝" : page.icon)
                                     .font(.system(size: 16))
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(page.title)
@@ -235,17 +246,17 @@ struct LibraryView: View {
                 // "Cover": first page thumbnail on a spine-accented card.
                 HStack(spacing: 0) {
                     Rectangle()
-                        .fill(Theme.accent)
+                        .fill(notebook.color.swatch)
                         .frame(width: 5)
                     ZStack {
-                        Theme.surface
+                        notebook.color.swatch.opacity(0.08)
                         if let first = pages.first {
                             PageThumbnailView(page: first)
                                 .scaleEffect(1.9)
                         } else {
                             Image(systemName: "book.closed")
                                 .font(.system(size: 30))
-                                .foregroundStyle(Theme.muted)
+                                .foregroundStyle(notebook.color.swatch)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -276,6 +287,16 @@ struct LibraryView: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button("Rename", systemImage: "pencil") { renameTarget = notebook }
+            Menu("Cover Color", systemImage: "paintpalette") {
+                ForEach(NotebookColor.allCases, id: \.self) { option in
+                    Button {
+                        notebook.color = option
+                        notebook.updatedAt = Date()
+                    } label: {
+                        Label(option.displayName, systemImage: notebook.color == option ? "checkmark.circle.fill" : "circle.fill")
+                    }
+                }
+            }
             Button("Delete", systemImage: "trash", role: .destructive) { notebookPendingDelete = notebook }
         }
     }
