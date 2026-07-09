@@ -38,22 +38,22 @@ struct RootView: View {
 
     private var notesWorkspace: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            NotebookSidebarView(
-                workspace: workspaces.first,
-                selectedNotebook: $selectedNotebook,
-                selectedPage: $selectedPage,
-                onExitToLibrary: {
-                    withAnimation(.snappy) { isInLibrary = true }
-                }
-            )
-        } content: {
+            // Pages only — switching notebooks means going back to the Library.
             if let notebook = selectedNotebook {
-                PageListView(notebook: notebook, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
+                PageListView(
+                    notebook: notebook,
+                    selectedNotebook: $selectedNotebook,
+                    selectedPage: $selectedPage,
+                    columnVisibility: $columnVisibility,
+                    onExitToLibrary: {
+                        withAnimation(.snappy) { isInLibrary = true }
+                    }
+                )
             } else {
                 EditorialEmptyState(
                     systemImage: "books.vertical",
-                    title: "Pick a Notebook",
-                    message: "Choose one on the left to see its pages"
+                    title: "No Notebook Open",
+                    message: "Return to the library to pick one"
                 )
             }
         } detail: {

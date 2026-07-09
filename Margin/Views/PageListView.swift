@@ -7,25 +7,59 @@ import PencilKit
 
 struct PageListView: View {
     @Bindable var notebook: Notebook
+    @Binding var selectedNotebook: Notebook?
     @Binding var selectedPage: Page?
     @Binding var columnVisibility: NavigationSplitViewVisibility
+    var onExitToLibrary: () -> Void = {}
 
     @Environment(\.modelContext) private var modelContext
     @State private var showingTemplatePicker = false
     @State private var showingPDFImporter = false
     @State private var renameTarget: Page?
+    @State private var notebookRenameTarget: Notebook?
 
     private var pages: [Page] {
         (notebook.pages ?? []).sorted { $0.sortIndex < $1.sortIndex }
     }
 
+    private var childNotebooks: [Notebook] {
+        (notebook.children ?? []).sorted { $0.sortIndex < $1.sortIndex }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
-            if pages.isEmpty {
+            if pages.isEmpty && childNotebooks.isEmpty {
                 emptyState
             } else {
                 List(selection: $selectedPage) {
+                    if !childNotebooks.isEmpty {
+                        Section {
+                            ForEach(childNotebooks) { child in
+                                Button {
+                                    selectedNotebook = child
+                                } label: {
+                                    HStack(spacing: 11) {
+                                        Image(systemName: "book.closed.fill")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Theme.accent)
+                                        Text(child.title)
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundStyle(Theme.text)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundStyle(Theme.muted)
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                .buttonStyle(.plain)
+                                .listRowSeparatorTint(Theme.border)
+                            }
+                        } header: {
+                            Text("Sub-notebooks").metaLabel()
+                        }
+                    }
                     ForEach(pages) { page in
                         PageRow(page: page)
                             .tag(page)
@@ -72,6 +106,10 @@ struct PageListView: View {
             page.title = newTitle
             page.updatedAt = Date()
         }
+        .renameAlert(item: $notebookRenameTarget, title: "Rename Notebook") { nb, newTitle in
+            nb.title = newTitle
+            nb.updatedAt = Date()
+        }
     }
 
     private func importPDF(from url: URL) {
@@ -91,9 +129,8 @@ struct PageListView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                FlatIconButton(systemName: "sidebar.leading", label: "Toggle Sidebar") {
-                    columnVisibility = columnVisibility == .all ? .doubleColumn : .all
-                }
+                FlatIconButton(systemName: "books.vertical", label: "Back to Library", action: onExitToLibrary)
+                notebookMenu
                 Spacer()
                 FlatIconButton(systemName: "arrow.down.doc", label: "Import PDF") {
                     showingPDFImporter = true
@@ -117,6 +154,38 @@ struct PageListView: View {
         .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 16)
+    }
+
+    private var notebookMenu: some View {
+        Menu {
+            Button("Rename Notebook", systemImage: "pencil") { notebookRenameTarget = notebook }
+            Button("New Sub-notebook", systemImage: "plus.rectangle.on.folder") {
+                let child = Notebook(
+                    title: "Untitled Notebook",
+                    workspace: notebook.workspace,
+                    parent: notebook,
+                    sortIndex: childNotebooks.count
+                )
+                modelContext.insert(child)
+                selectedNotebook = child
+            }
+            if let parent = notebook.parent {
+                Button("Up to \(parent.title)", systemImage: "arrow.turn.left.up") {
+                    selectedNotebook = parent
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 36, height: 34)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
+        }
+        .accessibilityLabel("Notebook Options")
     }
 
     private var emptyState: some View {
