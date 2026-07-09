@@ -10,6 +10,7 @@ struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var renameTarget: Notebook?
     @State private var notebookPendingDelete: Notebook?
+    @State private var searchText = ""
 
     private var notebooks: [Notebook] {
         guard let workspace else { return [] }
@@ -24,27 +25,41 @@ struct LibraryView: View {
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    private var searchResults: [Page] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return [] }
+        let pages = (try? modelContext.fetch(FetchDescriptor<Page>())) ?? []
+        return pages
+            .filter { $0.title.localizedCaseInsensitiveContains(query) }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
     private let columns = [GridItem(.adaptive(minimum: 210), spacing: 18)]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 header
+                searchField
 
-                if !favoritePages.isEmpty {
-                    favoritesRow
-                }
+                if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+                    searchResultsList
+                } else {
+                    if !favoritePages.isEmpty {
+                        favoritesRow
+                    }
 
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Notebooks").metaLabel()
-                    if notebooks.isEmpty {
-                        emptyShelf
-                    } else {
-                        LazyVGrid(columns: columns, spacing: 18) {
-                            ForEach(notebooks) { notebook in
-                                notebookCard(notebook)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Notebooks").metaLabel()
+                        if notebooks.isEmpty {
+                            emptyShelf
+                        } else {
+                            LazyVGrid(columns: columns, spacing: 18) {
+                                ForEach(notebooks) { notebook in
+                                    notebookCard(notebook)
+                                }
+                                newNotebookCard
                             }
-                            newNotebookCard
                         }
                     }
                 }
@@ -100,6 +115,79 @@ struct LibraryView: View {
     private var libraryMeta: String {
         let pageCount = notebooks.reduce(0) { $0 + ($1.pages?.count ?? 0) }
         return "\(notebooks.count) \(notebooks.count == 1 ? "notebook" : "notebooks") · \(pageCount) \(pageCount == 1 ? "page" : "pages")"
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.muted)
+            TextField("Search all pages", text: $searchText)
+                .font(.system(size: 15))
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                .accessibilityIdentifier("Search Pages")
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.muted)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear Search")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: 1)
+        )
+        .frame(maxWidth: 460)
+    }
+
+    private var searchResultsList: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(searchResults.isEmpty
+                 ? "No Results"
+                 : "\(searchResults.count) \(searchResults.count == 1 ? "Result" : "Results")")
+                .metaLabel()
+            ForEach(searchResults) { page in
+                Button {
+                    if let notebook = page.notebook {
+                        searchText = ""
+                        onOpen(notebook, page)
+                    }
+                } label: {
+                    HStack(spacing: 13) {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Theme.accent)
+                            .frame(width: 3, height: 34)
+                        if !page.icon.isEmpty {
+                            Text(page.icon).font(.system(size: 16))
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(page.title)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Theme.text)
+                                .lineLimit(1)
+                            Text(page.notebook?.title ?? "No Notebook")
+                                .metaLabel()
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.forward")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private var favoritesRow: some View {
