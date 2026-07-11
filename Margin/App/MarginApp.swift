@@ -17,6 +17,7 @@ struct MarginApp: App {
             Page.self,
             Block.self,
             PDFAsset.self,
+            Assignment.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

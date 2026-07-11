@@ -17,7 +17,7 @@ import PDFKit
 struct MarginTests {
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self])
+        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         return ModelContext(container)
@@ -362,6 +362,45 @@ struct MarginTests {
         try context.save()
         #expect(page.backgroundRaw == "dotted")
         #expect(PageBackground.selectable.contains(.dotted))
+    }
+
+    @Test func plannerSectionsBucketByUrgency() throws {
+        let context = try makeContext()
+        let calendar = Calendar.current
+        let now = Date()
+        let overdue = Assignment(title: "Late lab", dueDate: calendar.date(byAdding: .day, value: -2, to: now))
+        let today = Assignment(title: "Quiz", dueDate: now)
+        let soon = Assignment(title: "Essay", dueDate: calendar.date(byAdding: .day, value: 3, to: now))
+        let later = Assignment(title: "Final", dueDate: calendar.date(byAdding: .day, value: 30, to: now))
+        let undated = Assignment(title: "Reading")
+        let finished = Assignment(title: "Done thing", dueDate: now)
+        finished.isDone = true
+        for a in [overdue, today, soon, later, undated, finished] { context.insert(a) }
+
+        let grouped = Dictionary(uniqueKeysWithValues: PlannerSection.grouped(
+            [overdue, today, soon, later, undated, finished], now: now
+        ).map { ($0.0, $0.1) })
+        #expect(grouped[.overdue]?.map(\.title) == ["Late lab"])
+        #expect(grouped[.today]?.map(\.title) == ["Quiz"])
+        #expect(grouped[.thisWeek]?.map(\.title) == ["Essay"])
+        #expect(grouped[.later]?.map(\.title) == ["Final", "Reading"])
+        #expect(grouped[.done]?.map(\.title) == ["Done thing"])
+    }
+
+    @Test func deletingCourseNotebookOrphansAssignmentsWithoutDeleting() throws {
+        let context = try makeContext()
+        let course = Notebook(title: "Bio")
+        context.insert(course)
+        let assignment = Assignment(title: "Lab report", course: course)
+        context.insert(assignment)
+        try context.save()
+        #expect(assignment.course === course)
+
+        context.delete(course)
+        try context.save()
+        let remaining = try context.fetch(FetchDescriptor<Assignment>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.course == nil)
     }
 
     #if os(iOS)

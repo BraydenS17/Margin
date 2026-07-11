@@ -11,12 +11,28 @@ struct LibraryView: View {
     @State private var renameTarget: Notebook?
     @State private var notebookPendingDelete: Notebook?
     @State private var searchText = ""
+    @State private var showingPlanner = false
 
     private var notebooks: [Notebook] {
         guard let workspace else { return [] }
         return (workspace.notebooks ?? [])
             .filter { $0.parent == nil }
             .sorted { $0.sortIndex < $1.sortIndex }
+    }
+
+    private var dueSoon: [Assignment] {
+        let all = (try? modelContext.fetch(FetchDescriptor<Assignment>())) ?? []
+        return all
+            .filter { !$0.isDone }
+            .sorted {
+                switch ($0.dueDate, $1.dueDate) {
+                case let (a?, b?): return a < b
+                case (nil, _?): return false
+                case (_?, nil): return true
+                case (nil, nil): return $0.createdAt < $1.createdAt
+                }
+            }
+            .prefix(4).map { $0 }
     }
 
     private var recentPages: [Page] {
@@ -53,6 +69,9 @@ struct LibraryView: View {
                 if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
                     searchResultsList
                 } else {
+                    if !dueSoon.isEmpty {
+                        dueSoonRow
+                    }
                     if !recentPages.isEmpty {
                         pageRow(title: "Jump Back In", pages: recentPages)
                     }
@@ -78,6 +97,9 @@ struct LibraryView: View {
             .padding(28)
         }
         .background(Theme.background)
+        .sheet(isPresented: $showingPlanner) {
+            PlannerView()
+        }
         .renameAlert(item: $renameTarget, title: "Rename Notebook") { notebook, newTitle in
             notebook.title = newTitle
             notebook.updatedAt = Date()
@@ -114,6 +136,8 @@ struct LibraryView: View {
                     .fill(Theme.accent)
                     .frame(width: 11, height: 11)
                 Spacer()
+                FlatIconButton(systemName: "checklist", label: "Planner") { showingPlanner = true }
+                    .accessibilityIdentifier("Planner")
                 FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                     .accessibilityIdentifier("New Notebook")
@@ -197,6 +221,49 @@ struct LibraryView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var dueSoonRow: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Due Soon").metaLabel()
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(dueSoon) { assignment in
+                        Button {
+                            showingPlanner = true
+                        } label: {
+                            HStack(spacing: 9) {
+                                let overdue = (assignment.dueDate ?? .distantFuture) < Calendar.current.startOfDay(for: Date())
+                                Circle()
+                                    .fill(overdue ? Color.red : (assignment.course?.color.swatch ?? Theme.accent))
+                                    .frame(width: 8, height: 8)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(assignment.title)
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(Theme.text)
+                                        .lineLimit(1)
+                                    HStack(spacing: 4) {
+                                        if let due = assignment.dueDate {
+                                            Text(due.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                                                .metaLabel()
+                                                .foregroundStyle(overdue ? Color.red : Theme.muted)
+                                        }
+                                        if let course = assignment.course {
+                                            Text("· \(course.title)").metaLabel()
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Theme.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }
