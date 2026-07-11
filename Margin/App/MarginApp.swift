@@ -18,6 +18,8 @@ struct MarginApp: App {
             Block.self,
             PDFAsset.self,
             Assignment.self,
+            Deck.self,
+            Flashcard.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

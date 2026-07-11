@@ -17,7 +17,7 @@ import PDFKit
 struct MarginTests {
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self])
+        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self, Deck.self, Flashcard.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         return ModelContext(container)
@@ -422,6 +422,23 @@ struct MarginTests {
         #expect(reloaded.appearance == .dark)
         #expect(reloaded.showRecents == false)
         #expect(reloaded.showDueSoon == true)
+    }
+
+    @Test func deckCascadeDeletesCardsAndColorRoundTrips() throws {
+        let context = try makeContext()
+        let deck = Deck(title: "Bio Terms")
+        deck.color = .forest
+        context.insert(deck)
+        context.insert(Flashcard(front: "Mitochondria", back: "Powerhouse of the cell", sortIndex: 0, deck: deck))
+        context.insert(Flashcard(front: "Ribosome", back: "Protein synthesis", sortIndex: 1, deck: deck))
+        try context.save()
+
+        #expect(deck.colorRaw == "forest")
+        #expect((deck.cards ?? []).count == 2)
+
+        context.delete(deck)
+        try context.save()
+        #expect(try context.fetch(FetchDescriptor<Flashcard>()).isEmpty)
     }
 
     #if os(iOS)

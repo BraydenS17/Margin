@@ -12,6 +12,7 @@ struct LibraryView: View {
     @State private var notebookPendingDelete: Notebook?
     @State private var searchText = ""
     @State private var showingPlanner = false
+    @State private var openDeck: Deck?
     @State private var showingSettings = false
     private var settings: ThemeSettings { .shared }
 
@@ -20,6 +21,15 @@ struct LibraryView: View {
         return (workspace.notebooks ?? [])
             .filter { $0.parent == nil }
             .sorted { $0.sortIndex < $1.sortIndex }
+    }
+
+    private var decks: [Deck] {
+        ((try? modelContext.fetch(FetchDescriptor<Deck>())) ?? [])
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private var openAssignments: [Assignment] {
+        ((try? modelContext.fetch(FetchDescriptor<Assignment>())) ?? []).filter { !$0.isDone }
     }
 
     private var dueSoon: [Assignment] {
@@ -81,6 +91,8 @@ struct LibraryView: View {
                         pageRow(title: "Favorites", pages: favoritePages)
                     }
 
+                    spacesSection
+
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Notebooks").metaLabel()
                         if notebooks.isEmpty {
@@ -101,6 +113,9 @@ struct LibraryView: View {
         .background(Theme.background)
         .sheet(isPresented: $showingPlanner) {
             PlannerView()
+        }
+        .sheet(item: $openDeck) { deck in
+            DeckView(deck: deck)
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -143,8 +158,6 @@ struct LibraryView: View {
                 Spacer()
                 FlatIconButton(systemName: "slider.horizontal.3", label: "Customize") { showingSettings = true }
                     .accessibilityIdentifier("Customize")
-                FlatIconButton(systemName: "checklist", label: "Planner") { showingPlanner = true }
-                    .accessibilityIdentifier("Planner")
                 FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                     .accessibilityIdentifier("New Notebook")
@@ -230,6 +243,125 @@ struct LibraryView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    /// Non-notebook spaces: each classification of "storage" gets its own card.
+    /// Notebooks hold notes; the planner holds deadlines; decks hold recall material.
+    private var spacesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Spaces").metaLabel()
+            LazyVGrid(columns: columns, spacing: 18) {
+                plannerCard
+                ForEach(decks) { deck in
+                    deckCard(deck)
+                }
+                newDeckCard
+            }
+        }
+    }
+
+    private var plannerCard: some View {
+        Button {
+            showingPlanner = true
+        } label: {
+            spaceCard(
+                icon: "checklist",
+                tint: Theme.accent,
+                title: "Planner",
+                meta: plannerMeta
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("Planner")
+    }
+
+    private var plannerMeta: String {
+        let open = openAssignments
+        guard !open.isEmpty else { return "Nothing due" }
+        let next = open.compactMap(\.dueDate).min()
+        if let next {
+            return "\(open.count) open · next \(next.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))"
+        }
+        return "\(open.count) open"
+    }
+
+    private func deckCard(_ deck: Deck) -> some View {
+        Button {
+            openDeck = deck
+        } label: {
+            spaceCard(
+                icon: "rectangle.stack",
+                tint: deck.color.swatch,
+                title: deck.title,
+                meta: "\((deck.cards ?? []).count) cards · flashcards"
+            )
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Menu("Color", systemImage: "paintpalette") {
+                ForEach(NotebookColor.allCases, id: \.self) { option in
+                    Button(option.displayName) {
+                        deck.color = option
+                        deck.updatedAt = Date()
+                    }
+                }
+            }
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                modelContext.delete(deck)
+            }
+        }
+    }
+
+    private var newDeckCard: some View {
+        Button {
+            let deck = Deck(title: "Untitled Deck")
+            modelContext.insert(deck)
+            openDeck = deck
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                Text("New Deck")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Theme.muted)
+            }
+            .frame(maxWidth: .infinity, minHeight: 96)
+            .background(Theme.surface.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                    .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("New Deck")
+    }
+
+    private func spaceCard(icon: String, tint: Color, title: String, meta: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 46, height: 46)
+                .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                Text(meta).metaLabel()
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .background(Theme.background)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: 1)
+        )
     }
 
     private var dueSoonRow: some View {
