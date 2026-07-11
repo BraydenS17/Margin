@@ -28,6 +28,7 @@ struct RootView: View {
             }
         }
         .tint(Theme.accent)
+        .preferredColorScheme(ThemeSettings.shared.appearance.colorScheme)
         .onAppear(perform: ensureWorkspaceExists)
         #if DEBUG
         .sheet(isPresented: $showPDFInkSpike) {

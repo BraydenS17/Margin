@@ -403,6 +403,27 @@ struct MarginTests {
         #expect(remaining.first?.course == nil)
     }
 
+    @Test func themeSettingsPersistAndReload() throws {
+        let suite = "test.themesettings.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let settings = ThemeSettings(defaults: defaults)
+        #expect(settings.accent == .orange)
+        #expect(settings.appearance == .system)
+        #expect(settings.showDueSoon && settings.showRecents && settings.showFavorites)
+
+        settings.accent = .plum
+        settings.appearance = .dark
+        settings.showRecents = false
+
+        let reloaded = ThemeSettings(defaults: defaults)
+        #expect(reloaded.accent == .plum)
+        #expect(reloaded.appearance == .dark)
+        #expect(reloaded.showRecents == false)
+        #expect(reloaded.showDueSoon == true)
+    }
+
     #if os(iOS)
     private func makeSamplePDF(pageCount: Int) -> Data {
         let data = NSMutableData()
