@@ -21,6 +21,9 @@ final class Notebook {
     @Relationship(deleteRule: .cascade, inverse: \Page.notebook)
     var pages: [Page]? = []
 
+    @Relationship(deleteRule: .nullify, inverse: \Assignment.course)
+    var assignments: [Assignment]? = []
+
     init(
         title: String = "Untitled Notebook",
         workspace: Workspace? = nil,
