@@ -3,7 +3,9 @@ import SwiftUI
 /// Modern-editorial design system: high contrast, confident type, an electric-orange
 /// accent, and thin rules. Colors live in the asset catalog so they adapt light/dark.
 enum Theme {
-    static let accent = Color.accentColor
+    /// The user-selected accent, applied app-wide. Reading this inside a view body
+    /// registers Observation tracking on ThemeSettings, so changes recolor live.
+    static var accent: Color { ThemeSettings.shared.accent.swatch }
     static let background = Color("ThemeBackground")
     static let surface = Color("ThemeSurface")
     static let text = Color("ThemeText")
@@ -20,7 +22,7 @@ extension NotebookColor {
     /// Cover/spine tint for a notebook, tuned to sit with the editorial palette.
     var swatch: Color {
         switch self {
-        case .orange: return Theme.accent
+        case .orange: return Color(red: 1.0, green: 0.353, blue: 0.122)
         case .ocean: return Color(red: 0.12, green: 0.42, blue: 0.78)
         case .forest: return Color(red: 0.13, green: 0.48, blue: 0.32)
         case .plum: return Color(red: 0.45, green: 0.25, blue: 0.63)

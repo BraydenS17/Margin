@@ -12,6 +12,8 @@ struct LibraryView: View {
     @State private var notebookPendingDelete: Notebook?
     @State private var searchText = ""
     @State private var showingPlanner = false
+    @State private var showingSettings = false
+    private var settings: ThemeSettings { .shared }
 
     private var notebooks: [Notebook] {
         guard let workspace else { return [] }
@@ -69,13 +71,13 @@ struct LibraryView: View {
                 if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
                     searchResultsList
                 } else {
-                    if !dueSoon.isEmpty {
+                    if settings.showDueSoon && !dueSoon.isEmpty {
                         dueSoonRow
                     }
-                    if !recentPages.isEmpty {
+                    if settings.showRecents && !recentPages.isEmpty {
                         pageRow(title: "Jump Back In", pages: recentPages)
                     }
-                    if !favoritePages.isEmpty {
+                    if settings.showFavorites && !favoritePages.isEmpty {
                         pageRow(title: "Favorites", pages: favoritePages)
                     }
 
@@ -99,6 +101,9 @@ struct LibraryView: View {
         .background(Theme.background)
         .sheet(isPresented: $showingPlanner) {
             PlannerView()
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
         .renameAlert(item: $renameTarget, title: "Rename Notebook") { notebook, newTitle in
             notebook.title = newTitle
@@ -136,6 +141,8 @@ struct LibraryView: View {
                     .fill(Theme.accent)
                     .frame(width: 11, height: 11)
                 Spacer()
+                FlatIconButton(systemName: "slider.horizontal.3", label: "Customize") { showingSettings = true }
+                    .accessibilityIdentifier("Customize")
                 FlatIconButton(systemName: "checklist", label: "Planner") { showingPlanner = true }
                     .accessibilityIdentifier("Planner")
                 FlatIconButton(systemName: "plus", label: "New Notebook", action: addNotebook)
