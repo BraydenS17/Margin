@@ -535,4 +535,126 @@ struct MarginTests {
         #expect(text.contains("A Heading"))
     }
     #endif
+
+    // MARK: - Notion editor: outline visibility
+
+    @Test func collapsedToggleHidesOnlyItsIndentedChildren() throws {
+        let context = try makeContext()
+        let page = Page(title: "Outline")
+        context.insert(page)
+
+        let toggle = Block(type: .toggle, textContent: "Details", sortIndex: 0, page: page)
+        toggle.isCollapsed = true
+        let childA = Block(type: .paragraph, textContent: "hidden", sortIndex: 1, page: page)
+        childA.indentLevel = 1
+        let childB = Block(type: .bulletList, textContent: "also hidden", sortIndex: 2, page: page)
+        childB.indentLevel = 2
+        let after = Block(type: .paragraph, textContent: "visible again", sortIndex: 3, page: page)
+        for block in [toggle, childA, childB, after] { context.insert(block) }
+
+        let visible = BlockOutline.visible([toggle, childA, childB, after])
+        #expect(visible.map(\.textContent) == ["Details", "visible again"])
+    }
+
+    @Test func expandedToggleHidesNothing() throws {
+        let context = try makeContext()
+        let page = Page(title: "Outline")
+        context.insert(page)
+
+        let toggle = Block(type: .toggle, textContent: "Details", sortIndex: 0, page: page)
+        toggle.isCollapsed = false
+        let child = Block(type: .paragraph, textContent: "child", sortIndex: 1, page: page)
+        child.indentLevel = 1
+        context.insert(toggle)
+        context.insert(child)
+
+        #expect(BlockOutline.visible([toggle, child]).count == 2)
+    }
+
+    @Test func nestedCollapsedToggleInsideExpandedToggleStillHidesItsOwnChildren() throws {
+        let context = try makeContext()
+        let page = Page(title: "Outline")
+        context.insert(page)
+
+        let outer = Block(type: .toggle, textContent: "outer", sortIndex: 0, page: page)
+        let inner = Block(type: .toggle, textContent: "inner", sortIndex: 1, page: page)
+        inner.indentLevel = 1
+        inner.isCollapsed = true
+        let innerChild = Block(type: .paragraph, textContent: "buried", sortIndex: 2, page: page)
+        innerChild.indentLevel = 2
+        let outerChild = Block(type: .paragraph, textContent: "outer child", sortIndex: 3, page: page)
+        outerChild.indentLevel = 1
+        for block in [outer, inner, innerChild, outerChild] { context.insert(block) }
+
+        let visible = BlockOutline.visible([outer, inner, innerChild, outerChild])
+        #expect(visible.map(\.textContent) == ["outer", "inner", "outer child"])
+    }
+
+    // MARK: - Notion editor: slash commands
+
+    @Test func slashMenuEmptyQueryOffersEverythingExceptImages() {
+        let matches = BlockOutline.slashMatches("")
+        #expect(!matches.isEmpty)
+        #expect(!matches.contains(.image))
+        #expect(matches.contains(.toggle))
+        #expect(matches.contains(.code))
+        #expect(matches.contains(.pageLink))
+    }
+
+    @Test func slashMenuFiltersCaseInsensitively() {
+        #expect(BlockOutline.slashMatches("head") == [.heading])
+        #expect(BlockOutline.slashMatches("HEAD") == [.heading])
+        let listMatches = BlockOutline.slashMatches("list")
+        #expect(listMatches.contains(.bulletList))
+        #expect(listMatches.contains(.numberedList))
+        #expect(BlockOutline.slashMatches("zzz").isEmpty)
+    }
+
+    // MARK: - Notion editor: return-key split
+
+    @Test func splitOnReturnDividesAtFirstNewline() {
+        let split = BlockOutline.splitOnReturn("before\nafter")
+        #expect(split?.head == "before")
+        #expect(split?.tail == "after")
+
+        let trailing = BlockOutline.splitOnReturn("done\n")
+        #expect(trailing?.head == "done")
+        #expect(trailing?.tail == "")
+
+        #expect(BlockOutline.splitOnReturn("no newline here") == nil)
+    }
+
+    // MARK: - Notion editor: page links
+
+    @Test func pageLinkFieldsRoundTripAndDefaultOff() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Bio")
+        context.insert(notebook)
+        let source = Page(title: "Lecture 4", notebook: notebook)
+        let target = Page(title: "Glossary", notebook: notebook)
+        context.insert(source)
+        context.insert(target)
+
+        let link = Block(type: .pageLink, sortIndex: 0, page: source)
+        #expect(link.linkedPageID == nil)
+        #expect(link.isCollapsed == false)
+        link.linkedPageID = target.id
+        context.insert(link)
+        try context.save()
+
+        let targetID = target.id
+        var descriptor = FetchDescriptor<Block>(predicate: #Predicate { $0.linkedPageID == targetID })
+        descriptor.fetchLimit = 10
+        let backlinks = try context.fetch(descriptor)
+        #expect(backlinks.count == 1)
+        #expect(backlinks.first?.page?.title == "Lecture 4")
+    }
+
+    @Test func newBlockTypeRawValuesRoundTrip() {
+        for type in [BlockType.toggle, .code, .pageLink] {
+            let block = Block(type: type)
+            #expect(BlockType(rawValue: block.typeRaw) == type)
+            #expect(block.type == type)
+        }
+    }
 }

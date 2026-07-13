@@ -43,6 +43,9 @@ enum BlockType: String, CaseIterable {
     case callout
     case quote
     case table
+    case toggle
+    case code
+    case pageLink
 
     var displayName: String {
         switch self {
@@ -56,6 +59,9 @@ enum BlockType: String, CaseIterable {
         case .callout: return "Callout"
         case .quote: return "Quote"
         case .table: return "Table"
+        case .toggle: return "Toggle"
+        case .code: return "Code"
+        case .pageLink: return "Page Link"
         }
     }
 
@@ -71,6 +77,20 @@ enum BlockType: String, CaseIterable {
         case .callout: return "lightbulb"
         case .quote: return "quote.opening"
         case .table: return "tablecells"
+        case .toggle: return "chevron.forward.square"
+        case .code: return "curlybraces"
+        case .pageLink: return "link"
+        }
+    }
+
+    /// Block types whose main content is an editable text line — these participate in
+    /// the return-key split flow and the slash-command menu.
+    var isTextual: Bool {
+        switch self {
+        case .heading, .paragraph, .bulletList, .numberedList, .checkbox, .callout, .quote, .toggle:
+            return true
+        case .image, .divider, .table, .code, .pageLink:
+            return false
         }
     }
 }

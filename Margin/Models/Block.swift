@@ -13,6 +13,11 @@ final class Block {
     var isChecked: Bool = false
     // Nesting depth for list-style blocks (0 = top level), clamped in the UI.
     var indentLevel: Int = 0
+    // Only meaningful when type == .toggle: a collapsed toggle hides the blocks
+    // indented beneath it.
+    var isCollapsed: Bool = false
+    // Only meaningful when type == .pageLink: the Page.id this block points at.
+    var linkedPageID: UUID?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 

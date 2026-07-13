@@ -59,7 +59,17 @@ struct RootView: View {
             }
         } detail: {
             if let page = selectedPage {
-                PageDetailView(page: page, selectedPage: $selectedPage, columnVisibility: $columnVisibility)
+                PageDetailView(
+                    page: page,
+                    selectedPage: $selectedPage,
+                    onOpenPage: { target in
+                        // Page-link jump: pull the target's notebook into the sidebar too,
+                        // so links can cross notebooks like Notion pages cross sections.
+                        selectedNotebook = target.notebook ?? selectedNotebook
+                        selectedPage = target
+                    },
+                    columnVisibility: $columnVisibility
+                )
             } else {
                 EditorialEmptyState(
                     systemImage: "doc.text",
@@ -71,6 +81,9 @@ struct RootView: View {
         .onChange(of: selectedNotebook) { _, notebook in
             // Jump straight into the notebook's first page instead of leaving the detail
             // column empty (or showing a page from the previously selected notebook).
+            // When the page was already retargeted into this notebook (a page-link jump
+            // sets both), leave it alone instead of yanking focus to page one.
+            guard selectedPage?.notebook?.id != notebook?.id else { return }
             selectedPage = notebook?.pages?.sorted { $0.sortIndex < $1.sortIndex }.first
         }
         #if DEBUG
