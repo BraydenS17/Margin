@@ -4,6 +4,7 @@ import SwiftData
 struct PageDetailView: View {
     @Bindable var page: Page
     var selectedPage: Binding<Page?>? = nil
+    var onOpenPage: ((Page) -> Void)? = nil
     @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
 
@@ -193,7 +194,8 @@ struct PageDetailView: View {
                             }
                             .padding(.horizontal, 22)
                             .padding(.top, 20)
-                            BlockListView(page: page)
+                            BlockListView(page: page, onOpenPage: onOpenPage)
+                            BacklinksView(page: page, onOpenPage: onOpenPage)
                         }
                         .allowsHitTesting(mode == .edit)
                         .sheet(isPresented: $showingIconPicker) {
@@ -239,7 +241,10 @@ struct PageDetailView: View {
                 addBlockButton(.checkbox)
             }
             Section("Structure") {
+                addBlockButton(.toggle)
                 addBlockButton(.table)
+                addBlockButton(.code)
+                addBlockButton(.pageLink)
                 addBlockButton(.image)
                 addBlockButton(.divider)
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 #if os(iOS)
 import PencilKit
@@ -195,11 +196,41 @@ private struct PageExportContent: View {
                 Text(block.textContent).italic()
             }
             .font(.system(size: 13))
+        case .toggle:
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: block.isCollapsed ? "chevron.right" : "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.top, 2)
+                Text(block.textContent).fontWeight(.semibold)
+            }
+            .font(.system(size: 13))
+        case .code:
+            Text(block.textContent)
+                .font(.system(size: 11, design: .monospaced))
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.black.opacity(0.05), in: RoundedRectangle(cornerRadius: 6))
+        case .pageLink:
+            HStack(spacing: 6) {
+                Image(systemName: "link").font(.system(size: 10))
+                Text(linkedPageTitle(for: block)).underline()
+            }
+            .font(.system(size: 13))
         case .image:
             EmptyView()
         case .table:
             tableView(block.table)
         }
+    }
+
+    private func linkedPageTitle(for block: Block) -> String {
+        guard let target = block.linkedPageID else { return "Untitled link" }
+        // Exported pages only ever link within their own model container; resolve the
+        // title through the source page's context so export needs no extra plumbing.
+        guard let context = block.modelContext else { return "Untitled link" }
+        var descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.id == target })
+        descriptor.fetchLimit = 1
+        return (try? context.fetch(descriptor))?.first?.title ?? "Untitled link"
     }
 
     private func tableView(_ table: BlockTableData) -> some View {
