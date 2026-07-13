@@ -54,10 +54,23 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 ### Sub-notebooks (`feature/sub-notebooks`)
 - "New Sub-notebook" in the notebook context menu — the nesting the model always supported, now creatable in UI.
 
+### Notion-style block editor (`feature/notion-editor`)
+- **Slash commands**: typing `/` in any textual block opens an inline, filter-as-you-type block menu that converts the block in place.
+- **Return-key flow**: return splits the block at the caret into a new focused block; lists continue their type, return on an empty list item exits to a paragraph.
+- **Toggle blocks**: collapsible headers that hide the blocks indented beneath them (nesting supported).
+- **Code blocks**: monospaced, autocorrect-off surface.
+- **Page links + backlinks**: a block that jumps to any page in any notebook, with "Linked From" chips on the target page.
+
+### Page database (`feature/page-database`) — the "personal database" milestone
+- **Tags**: many-to-many labels on pages (`Tag` model), created/applied from a properties bar under the page title; colors auto-assigned.
+- **Status property**: per-page study status (Unsorted / In Progress / Needs Review / Mastered).
+- **Index space**: a Library card opening the page database — every page across every notebook in a **Table** view (notebook, tags, status, recency) or a **Board** view (kanban columns by status), filterable by notebook and tag; status editable from context menus; rows/cards open the page directly.
+- This supersedes the old "no real database" caveat: properties + views over live pages now exist. Still out of scope: user-defined property *types* and calendar views.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
-- **`feature-overhaul` branch** (unmerged, per request): page icons, favorites, block "Turn Into"/duplicate/indent, page duplicate/move.
+- Slash menu / return-key feel on a physical keyboard, and Pencil features (see deferred device checks).
 
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)
 

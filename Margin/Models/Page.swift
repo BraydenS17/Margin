@@ -16,6 +16,12 @@ final class Page {
     // Stored as a raw String (not the enum) for CloudKit compatibility; use `background`.
     var backgroundRaw: String = PageBackground.blank.rawValue
 
+    // Stored as a raw String (not the enum) for CloudKit compatibility; use `status`.
+    var statusRaw: String = PageStatus.none.rawValue
+
+    // Many-to-many; the inverse is declared on Tag.pages.
+    var tags: [Tag]? = []
+
     var inkData: Data?
 
     var notebook: Notebook?
@@ -44,5 +50,10 @@ final class Page {
     var background: PageBackground {
         get { PageBackground(rawValue: backgroundRaw) ?? .blank }
         set { backgroundRaw = newValue.rawValue }
+    }
+
+    var status: PageStatus {
+        get { PageStatus(rawValue: statusRaw) ?? .none }
+        set { statusRaw = newValue.rawValue }
     }
 }

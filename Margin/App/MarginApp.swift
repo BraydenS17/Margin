@@ -20,6 +20,7 @@ struct MarginApp: App {
             Assignment.self,
             Deck.self,
             Flashcard.self,
+            Tag.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
