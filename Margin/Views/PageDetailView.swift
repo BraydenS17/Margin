@@ -191,6 +191,8 @@ struct PageDetailView: View {
                                 AccentRule()
                                 Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
                                     .metaLabel()
+                                PagePropertiesBar(page: page)
+                                    .padding(.top, 2)
                             }
                             .padding(.horizontal, 22)
                             .padding(.top, 20)

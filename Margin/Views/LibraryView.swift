@@ -12,6 +12,7 @@ struct LibraryView: View {
     @State private var notebookPendingDelete: Notebook?
     @State private var searchText = ""
     @State private var showingPlanner = false
+    @State private var showingIndex = false
     @State private var openDeck: Deck?
     @State private var showingSettings = false
     private var settings: ThemeSettings { .shared }
@@ -113,6 +114,9 @@ struct LibraryView: View {
         .background(Theme.background)
         .sheet(isPresented: $showingPlanner) {
             PlannerView()
+        }
+        .sheet(isPresented: $showingIndex) {
+            PageIndexView(onOpen: onOpen)
         }
         .sheet(item: $openDeck) { deck in
             DeckView(deck: deck)
@@ -252,6 +256,7 @@ struct LibraryView: View {
             Text("Spaces").metaLabel()
             LazyVGrid(columns: columns, spacing: 18) {
                 plannerCard
+                indexCard
                 ForEach(decks) { deck in
                     deckCard(deck)
                 }
@@ -273,6 +278,27 @@ struct LibraryView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("Planner")
+    }
+
+    private var indexCard: some View {
+        Button {
+            showingIndex = true
+        } label: {
+            spaceCard(
+                icon: "square.grid.3x1.below.line.grid.1x2",
+                tint: Color(red: 0.45, green: 0.25, blue: 0.63),
+                title: "Index",
+                meta: indexMeta
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("Index")
+    }
+
+    private var indexMeta: String {
+        let pageCount = (try? modelContext.fetchCount(FetchDescriptor<Page>())) ?? 0
+        let tagCount = (try? modelContext.fetchCount(FetchDescriptor<Tag>())) ?? 0
+        return "\(pageCount) \(pageCount == 1 ? "page" : "pages") · \(tagCount) \(tagCount == 1 ? "tag" : "tags")"
     }
 
     private var plannerMeta: String {

@@ -95,6 +95,32 @@ enum BlockType: String, CaseIterable {
     }
 }
 
+/// Study-progress property on a page — powers the board view's columns.
+enum PageStatus: String, CaseIterable {
+    case none
+    case inProgress
+    case needsReview
+    case mastered
+
+    var displayName: String {
+        switch self {
+        case .none: return "Unsorted"
+        case .inProgress: return "In Progress"
+        case .needsReview: return "Needs Review"
+        case .mastered: return "Mastered"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .none: return "circle.dashed"
+        case .inProgress: return "pencil.circle"
+        case .needsReview: return "exclamationmark.circle"
+        case .mastered: return "checkmark.seal"
+        }
+    }
+}
+
 enum NotebookColor: String, CaseIterable {
     case orange
     case ocean

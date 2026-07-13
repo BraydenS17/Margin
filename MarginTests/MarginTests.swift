@@ -17,7 +17,7 @@ import PDFKit
 struct MarginTests {
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self, Deck.self, Flashcard.self])
+        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self, Deck.self, Flashcard.self, Tag.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         return ModelContext(container)
@@ -656,5 +656,106 @@ struct MarginTests {
             #expect(BlockType(rawValue: block.typeRaw) == type)
             #expect(block.type == type)
         }
+    }
+
+    // MARK: - Page database: tags
+
+    @Test func tagsAreManyToManyAcrossNotebooks() throws {
+        let context = try makeContext()
+        let bio = Notebook(title: "Biology")
+        let chem = Notebook(title: "Chemistry")
+        context.insert(bio)
+        context.insert(chem)
+        let bioPage = Page(title: "Enzymes", notebook: bio)
+        let chemPage = Page(title: "Catalysts", notebook: chem)
+        context.insert(bioPage)
+        context.insert(chemPage)
+
+        let exam = Tag(name: "Exam 2", color: .crimson)
+        context.insert(exam)
+        bioPage.tags = [exam]
+        chemPage.tags = [exam]
+        try context.save()
+
+        #expect((exam.pages ?? []).count == 2)
+        #expect((bioPage.tags ?? []).first?.name == "Exam 2")
+
+        // Removing the tag from one page must not touch the other.
+        bioPage.tags?.removeAll { $0.id == exam.id }
+        try context.save()
+        #expect((exam.pages ?? []).count == 1)
+        #expect((chemPage.tags ?? []).first?.name == "Exam 2")
+    }
+
+    @Test func deletingTagLeavesPagesIntact() throws {
+        let context = try makeContext()
+        let page = Page(title: "Lecture 9")
+        context.insert(page)
+        let tag = Tag(name: "Midterm")
+        context.insert(tag)
+        page.tags = [tag]
+        try context.save()
+
+        context.delete(tag)
+        try context.save()
+        #expect((page.tags ?? []).isEmpty)
+        #expect(page.title == "Lecture 9")
+    }
+
+    // MARK: - Page database: status
+
+    @Test func pageStatusDefaultsToNoneAndRoundTrips() throws {
+        let context = try makeContext()
+        let page = Page(title: "Fresh")
+        context.insert(page)
+        #expect(page.status == PageStatus.none)
+
+        page.status = .needsReview
+        try context.save()
+        #expect(PageStatus(rawValue: page.statusRaw) == .needsReview)
+
+        page.statusRaw = "garbage"
+        #expect(page.status == PageStatus.none)
+    }
+
+    // MARK: - Page database: index queries
+
+    @Test func indexFilterByTagNotebookAndStatus() throws {
+        let context = try makeContext()
+        let bio = Notebook(title: "Biology")
+        let chem = Notebook(title: "Chemistry")
+        context.insert(bio)
+        context.insert(chem)
+
+        let tag = Tag(name: "Exam")
+        context.insert(tag)
+
+        let a = Page(title: "A", notebook: bio)
+        a.tags = [tag]
+        a.status = .needsReview
+        let b = Page(title: "B", notebook: bio)
+        let c = Page(title: "C", notebook: chem)
+        c.tags = [tag]
+        for page in [a, b, c] { context.insert(page) }
+        try context.save()
+
+        let pages = [a, b, c]
+        #expect(PageIndexQuery.filter(pages).count == 3)
+        #expect(PageIndexQuery.filter(pages, tagID: tag.id).map(\.title).sorted() == ["A", "C"])
+        #expect(PageIndexQuery.filter(pages, notebookID: bio.id).map(\.title).sorted() == ["A", "B"])
+        #expect(PageIndexQuery.filter(pages, tagID: tag.id, notebookID: bio.id).map(\.title) == ["A"])
+        #expect(PageIndexQuery.filter(pages, status: .needsReview).map(\.title) == ["A"])
+    }
+
+    @Test func indexBoardAlwaysHasEveryStatusColumn() throws {
+        let context = try makeContext()
+        let page = Page(title: "Only One")
+        page.status = .mastered
+        context.insert(page)
+
+        let board = PageIndexQuery.board([page])
+        #expect(board.map(\.0) == PageStatus.allCases)
+        #expect(board.first { $0.0 == .mastered }?.1.map(\.title) == ["Only One"])
+        #expect(board.first { $0.0 == .inProgress }?.1.isEmpty == true)
     }
 }
