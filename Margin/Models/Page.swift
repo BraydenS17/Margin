@@ -19,6 +19,9 @@ final class Page {
     // Stored as a raw String (not the enum) for CloudKit compatibility; use `status`.
     var statusRaw: String = PageStatus.none.rawValue
 
+    // Stored as a raw String (not the enum) for CloudKit compatibility; use `kind`.
+    var kindRaw: String = PageKind.document.rawValue
+
     // Many-to-many; the inverse is declared on Tag.pages.
     var tags: [Tag]? = []
 
@@ -28,6 +31,9 @@ final class Page {
 
     @Relationship(deleteRule: .cascade, inverse: \Block.page)
     var blocks: [Block]? = []
+
+    @Relationship(deleteRule: .cascade, inverse: \TextBox.page)
+    var textBoxes: [TextBox]? = []
 
     var pdfAsset: PDFAsset?
     var pdfPageIndex: Int?
@@ -55,5 +61,10 @@ final class Page {
     var status: PageStatus {
         get { PageStatus(rawValue: statusRaw) ?? .none }
         set { statusRaw = newValue.rawValue }
+    }
+
+    var kind: PageKind {
+        get { PageKind(rawValue: kindRaw) ?? .document }
+        set { kindRaw = newValue.rawValue }
     }
 }

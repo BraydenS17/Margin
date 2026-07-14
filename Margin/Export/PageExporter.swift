@@ -130,14 +130,31 @@ private struct PageExportContent: View {
                 .fill(Color(red: 1, green: 0.35, blue: 0.12))
                 .frame(width: 22, height: 2)
 
-            let numberedIndices = numberedListIndices()
-            ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
-                blockView(block, numberedIndex: numberedIndices[index])
+            if page.kind == .document {
+                let numberedIndices = numberedListIndices()
+                ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
+                    blockView(block, numberedIndex: numberedIndices[index])
+                }
             }
         }
         .padding(28)
         .frame(width: PageExporter.pageWidth, alignment: .topLeading)
         .background(Color.white)
+        // Canvas pages carry positioned text boxes instead of flowing blocks; render
+        // them at their stored top-leading offsets, like the editor does.
+        .overlay(alignment: .topLeading) {
+            if page.kind == .canvas {
+                ZStack(alignment: .topLeading) {
+                    Color.clear
+                    ForEach((page.textBoxes ?? []).sorted { $0.createdAt < $1.createdAt }) { box in
+                        Text(box.text)
+                            .font(.system(size: 13))
+                            .frame(width: box.width, alignment: .leading)
+                            .offset(x: box.x, y: box.y)
+                    }
+                }
+            }
+        }
         .environment(\.colorScheme, .light)
     }
 

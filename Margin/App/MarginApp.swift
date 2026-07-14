@@ -21,6 +21,7 @@ struct MarginApp: App {
             Deck.self,
             Flashcard.self,
             Tag.self,
+            TextBox.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

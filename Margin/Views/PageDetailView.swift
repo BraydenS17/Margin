@@ -56,6 +56,10 @@ struct PageDetailView: View {
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
+        // Handwritten pages are drawing-first: land in Draw, not the text tools.
+        .onChange(of: page.id, initial: true) { _, _ in
+            mode = page.kind == .canvas ? .draw : .edit
+        }
         .overlay(alignment: .bottom) {
             if mode == .draw {
                 InkToolbar(
@@ -88,7 +92,11 @@ struct PageDetailView: View {
             FlatIconButton(systemName: "square.and.arrow.up", label: "Export PDF", action: exportPDF)
             #endif
             if mode == .edit && page.background != .pdf {
-                addBlockMenu
+                if page.kind == .canvas {
+                    FlatIconButton(systemName: "character.textbox", label: "Add Text Box", action: addTextBox)
+                } else {
+                    addBlockMenu
+                }
             }
             Spacer()
             pageNavigator
@@ -189,14 +197,16 @@ struct PageDetailView: View {
                                         .lineLimit(3)
                                 }
                                 AccentRule()
-                                Text(mode == .draw ? "Draw Mode" : "\(page.background.rawValue) · edit mode")
+                                Text(metaLine)
                                     .metaLabel()
                                 PagePropertiesBar(page: page)
                                     .padding(.top, 2)
                             }
                             .padding(.horizontal, 22)
                             .padding(.top, 20)
-                            BlockListView(page: page, onOpenPage: onOpenPage)
+                            if page.kind == .document {
+                                BlockListView(page: page, onOpenPage: onOpenPage)
+                            }
                             BacklinksView(page: page, onOpenPage: onOpenPage)
                         }
                         .allowsHitTesting(mode == .edit)
@@ -206,6 +216,12 @@ struct PageDetailView: View {
                                 page.updatedAt = Date()
                             }
                         }
+                    }
+                }
+                .overlay {
+                    if page.kind == .canvas {
+                        TextBoxLayer(page: page)
+                            .allowsHitTesting(mode == .edit)
                     }
                 }
                 .overlay {
@@ -227,6 +243,24 @@ struct PageDetailView: View {
                     .id(page.id)
                     .allowsHitTesting(mode == .draw)
                 }
+    }
+
+    private var metaLine: String {
+        if mode == .draw { return "Draw Mode" }
+        if page.kind == .canvas { return "handwritten · move boxes by their grip" }
+        return "\(page.background.rawValue) · edit mode"
+    }
+
+    /// Drops a fresh text box, staggered so consecutive boxes don't stack exactly.
+    private func addTextBox() {
+        let count = page.textBoxes?.count ?? 0
+        let box = TextBox(
+            x: 40 + Double((count % 5)) * 26,
+            y: 150 + Double((count % 7)) * 34,
+            page: page
+        )
+        modelContext.insert(box)
+        page.updatedAt = Date()
     }
 
     private var addBlockMenu: some View {
@@ -294,13 +328,15 @@ struct PageDetailView: View {
                     .metaLabel()
                     .fixedSize()
                 FlatIconButton(
-                    systemName: index < pages.count - 1 ? "chevron.right" : "plus.square.on.square.dashed",
+                    systemName: index < pages.count - 1 ? "chevron.right" : "plus.square.dashed",
                     label: index < pages.count - 1 ? "Next Page" : "New Page at End"
                 ) {
                     if index < pages.count - 1 {
                         selectedPage.wrappedValue = pages[index + 1]
                     } else if let notebook = page.notebook {
                         let fresh = Page(title: "Untitled Page", notebook: notebook, background: page.background, sortIndex: pages.count)
+                        // Flipping past the end continues the same kind of page.
+                        fresh.kind = page.kind
                         modelContext.insert(fresh)
                         selectedPage.wrappedValue = fresh
                     }
