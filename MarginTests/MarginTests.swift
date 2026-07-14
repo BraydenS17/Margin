@@ -17,7 +17,7 @@ import PDFKit
 struct MarginTests {
 
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self, Deck.self, Flashcard.self, Tag.self])
+        let schema = Schema([Workspace.self, Notebook.self, Page.self, Block.self, PDFAsset.self, Assignment.self, Deck.self, Flashcard.self, Tag.self, TextBox.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         return ModelContext(container)
@@ -745,6 +745,57 @@ struct MarginTests {
         #expect(PageIndexQuery.filter(pages, notebookID: bio.id).map(\.title).sorted() == ["A", "B"])
         #expect(PageIndexQuery.filter(pages, tagID: tag.id, notebookID: bio.id).map(\.title) == ["A"])
         #expect(PageIndexQuery.filter(pages, status: .needsReview).map(\.title) == ["A"])
+    }
+
+    // MARK: - Handwritten pages
+
+    @Test func pageKindDefaultsToDocumentAndRoundTrips() throws {
+        let context = try makeContext()
+        let page = Page(title: "Old Page")
+        context.insert(page)
+        #expect(page.kind == .document)
+
+        page.kind = .canvas
+        try context.save()
+        #expect(PageKind(rawValue: page.kindRaw) == .canvas)
+
+        page.kindRaw = "garbage"
+        #expect(page.kind == .document)
+    }
+
+    @Test func textBoxesPersistPositionAndCascadeWithPage() throws {
+        let context = try makeContext()
+        let notebook = Notebook(title: "Sketches")
+        context.insert(notebook)
+        let page = Page(title: "Diagram", notebook: notebook)
+        page.kind = .canvas
+        context.insert(page)
+
+        let box = TextBox(text: "Mitochondria", x: 120, y: 300, width: 170, page: page)
+        context.insert(box)
+        try context.save()
+
+        #expect((page.textBoxes ?? []).count == 1)
+        let stored = try #require(page.textBoxes?.first)
+        #expect(stored.text == "Mitochondria")
+        #expect(stored.x == 120)
+        #expect(stored.y == 300)
+        #expect(stored.width == 170)
+
+        context.delete(page)
+        try context.save()
+        let remaining = try context.fetch(FetchDescriptor<TextBox>())
+        #expect(remaining.isEmpty)
+    }
+
+    @Test func handwrittenTemplateCreatesCanvasKind() {
+        let template = PageTemplate.handwritten
+        #expect(template.kind == .canvas)
+        #expect(template.blockSpecs.isEmpty)
+        // Every other stock template stays a document page.
+        for other in PageTemplate.all where other.name != "Handwritten" {
+            #expect(other.kind == .document)
+        }
     }
 
     @Test func indexBoardAlwaysHasEveryStatusColumn() throws {

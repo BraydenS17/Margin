@@ -95,6 +95,28 @@ enum BlockType: String, CaseIterable {
     }
 }
 
+/// What kind of content layer a page carries. Document pages are block-editor pages;
+/// canvas pages are dedicated handwriting surfaces with no block editor at all —
+/// ink first, plus freely positioned text boxes.
+enum PageKind: String, CaseIterable {
+    case document
+    case canvas
+
+    var displayName: String {
+        switch self {
+        case .document: return "Document"
+        case .canvas: return "Handwritten"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .document: return "doc.text"
+        case .canvas: return "pencil.and.outline"
+        }
+    }
+}
+
 /// Study-progress property on a page — powers the board view's columns.
 enum PageStatus: String, CaseIterable {
     case none

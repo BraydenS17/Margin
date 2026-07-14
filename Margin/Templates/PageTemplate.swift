@@ -7,6 +7,7 @@ struct PageTemplate: Identifiable {
     let systemImage: String
     let background: PageBackground
     let blockSpecs: [BlockSpec]
+    var kind: PageKind = .document
 }
 
 struct BlockSpec {
@@ -23,6 +24,15 @@ extension PageTemplate {
         systemImage: "doc",
         background: .blank,
         blockSpecs: []
+    )
+
+    static let handwritten = PageTemplate(
+        name: "Handwritten",
+        description: "A dedicated drawing page — no block editor, just ink and movable text boxes",
+        systemImage: "pencil.and.outline",
+        background: .ruled,
+        blockSpecs: [],
+        kind: .canvas
     )
 
     static let quickNotes = PageTemplate(
@@ -161,6 +171,7 @@ extension PageTemplate {
 
     static let all: [PageTemplate] = [
         .blank,
+        .handwritten,
         .quickNotes,
         .dayPlanner,
         .courseLandingPage,

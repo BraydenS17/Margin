@@ -207,6 +207,7 @@ struct PageListView: View {
     private func addPage(from template: PageTemplate) {
         let title = template.name == "Blank" ? "Untitled Page" : template.name
         let page = Page(title: title, notebook: notebook, background: template.background, sortIndex: pages.count)
+        page.kind = template.kind
         modelContext.insert(page)
 
         for (index, spec) in template.blockSpecs.enumerated() {

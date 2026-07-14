@@ -67,6 +67,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - **Index space**: a Library card opening the page database — every page across every notebook in a **Table** view (notebook, tags, status, recency) or a **Board** view (kanban columns by status), filterable by notebook and tag; status editable from context menus; rows/cards open the page directly.
 - This supersedes the old "no real database" caveat: properties + views over live pages now exist. Still out of scope: user-defined property *types* and calendar views.
 
+### Handwritten pages (`feature/handwritten-pages`)
+- **Page kinds**: every page is a `document` (block editor) or a `canvas` (dedicated drawing surface — no block editor, no default text edit at all).
+- **Handwritten template** in the New Page picker; canvas pages open in Draw mode, and flipping past the last page continues the same kind.
+- **Text boxes** on canvas pages: freely positioned, dragged by a grip handle (so dragging never fights text editing), width presets, context-menu delete, cascade-deleted with the page; rendered in PDF export/thumbnails at their stored positions.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
