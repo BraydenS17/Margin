@@ -61,15 +61,16 @@ private struct DraggableTextBox: View {
         }
     }
 
-    /// The drag handle: a slim dotted bar across the top of the box.
+    /// The drag handle: a dotted bar across the top of the box — sized for a fingertip,
+    /// not a cursor.
     private var grip: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { _ in
-                Circle().fill(Theme.muted.opacity(0.7)).frame(width: 3.5, height: 3.5)
+                Circle().fill(Theme.muted.opacity(0.7)).frame(width: 4.5, height: 4.5)
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 18)
+        .frame(height: 28)
         .background(Theme.surface, in: UnevenRoundedRectangle(topLeadingRadius: 9, topTrailingRadius: 9))
         .contentShape(Rectangle())
         .gesture(

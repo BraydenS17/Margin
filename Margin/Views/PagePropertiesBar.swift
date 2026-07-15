@@ -47,13 +47,13 @@ struct PagePropertiesBar: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: page.status.systemImage)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                 Text(page.status.displayName)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
             }
             .foregroundStyle(page.status == .none ? Theme.muted : Theme.accent)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 9)
             .background(Theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(
                 page.status == .none ? Theme.border : Theme.accent.opacity(0.5), lineWidth: 1))
@@ -64,13 +64,13 @@ struct PagePropertiesBar: View {
 
     private func tagChip(_ tag: Tag) -> some View {
         HStack(spacing: 6) {
-            Circle().fill(tag.color.swatch).frame(width: 7, height: 7)
+            Circle().fill(tag.color.swatch).frame(width: 8, height: 8)
             Text(tag.name)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.text)
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 9)
         .background(tag.color.swatch.opacity(0.08), in: Capsule())
         .overlay(Capsule().strokeBorder(tag.color.swatch.opacity(0.35), lineWidth: 1))
         .contextMenu {
@@ -107,13 +107,13 @@ struct PagePropertiesBar: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "tag")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                 Text(pageTags.isEmpty ? "Add Tag" : "")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
             }
             .foregroundStyle(Theme.muted)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 9)
             .background(Theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
         }

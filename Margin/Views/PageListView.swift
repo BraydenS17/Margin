@@ -51,7 +51,7 @@ struct PageListView: View {
                                             .font(.system(size: 11, weight: .semibold))
                                             .foregroundStyle(Theme.muted)
                                     }
-                                    .padding(.vertical, 4)
+                                    .padding(.vertical, 9)
                                 }
                                 .buttonStyle(.plain)
                                 .listRowSeparatorTint(Theme.border)
@@ -63,6 +63,32 @@ struct PageListView: View {
                     ForEach(pages) { page in
                         PageRow(page: page)
                             .tag(page)
+                            // Touch-first: the essentials ride swipes, so nothing forces a long-press.
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                Button {
+                                    page.isFavorite.toggle()
+                                    page.updatedAt = Date()
+                                } label: {
+                                    Label(
+                                        page.isFavorite ? "Unfavorite" : "Favorite",
+                                        systemImage: page.isFavorite ? "star.slash" : "star"
+                                    )
+                                }
+                                .tint(Theme.accent)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    delete(page)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                Button {
+                                    renameTarget = page
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                .tint(.indigo)
+                            }
                             .contextMenu {
                                 Button("Rename", systemImage: "pencil") { renameTarget = page }
                                 Button(
@@ -84,7 +110,6 @@ struct PageListView: View {
                                 }
                             }
                     }
-                    .onDelete(perform: deletePages)
                     .listRowSeparatorTint(Theme.border)
                 }
                 .listStyle(.plain)
@@ -176,9 +201,9 @@ struct PageListView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.accent)
-                .frame(width: 36, height: 34)
+                .frame(width: 44, height: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -222,10 +247,9 @@ struct PageListView: View {
         selectedPage = page
     }
 
-    private func deletePages(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(pages[index])
-        }
+    private func delete(_ page: Page) {
+        if selectedPage === page { selectedPage = nil }
+        modelContext.delete(page)
     }
 
     /// Sibling notebooks a page could move to (flattened, excluding the current one).
@@ -332,6 +356,6 @@ private struct PageRow: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Theme.muted)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 9)
     }
 }

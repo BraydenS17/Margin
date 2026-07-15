@@ -137,11 +137,11 @@ struct PageDetailView: View {
                     mode = m
                 } label: {
                     Text(m.rawValue)
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(mode == m ? Color.white : Theme.muted)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
                         .background(mode == m ? Theme.accent : Color.clear, in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -176,9 +176,9 @@ struct PageDetailView: View {
                                     } label: {
                                         if page.icon.isEmpty {
                                             Image(systemName: "face.smiling")
-                                                .font(.system(size: 18))
+                                                .font(.system(size: 19))
                                                 .foregroundStyle(Theme.muted)
-                                                .frame(width: 34, height: 34)
+                                                .frame(width: 40, height: 40)
                                                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -286,9 +286,9 @@ struct PageDetailView: View {
             }
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.accent)
-                .frame(width: 36, height: 34)
+                .frame(width: 44, height: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)

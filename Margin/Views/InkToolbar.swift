@@ -17,7 +17,7 @@ struct InkToolbar: View {
             if inputMode == .auto {
                 statusPill
             }
-            HStack(spacing: 14) {
+            HStack(spacing: 10) {
                 inputModeMenu
                 separator
 
@@ -28,18 +28,18 @@ struct InkToolbar: View {
                 separator
 
                 if tool != .eraser {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 2) {
                         ForEach(palette, id: \.self) { swatch($0) }
                     }
                     separator
                 }
 
-                HStack(spacing: 10) {
+                HStack(spacing: 2) {
                     ForEach(widths, id: \.self) { widthDot($0) }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(Theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
             .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
@@ -73,9 +73,9 @@ struct InkToolbar: View {
             inputMode = next
         } label: {
             Image(systemName: inputMode.systemImage)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.text)
-                .frame(width: 38, height: 34)
+                .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Input Mode: \(inputMode.label). Tap to change.")
@@ -91,9 +91,9 @@ struct InkToolbar: View {
             tool = kind
         } label: {
             Image(systemName: kind.systemImage)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(selected ? Color.white : Theme.text)
-                .frame(width: 38, height: 34)
+                .frame(width: 44, height: 44)
                 .background(selected ? Theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -107,13 +107,16 @@ struct InkToolbar: View {
         } label: {
             Circle()
                 .fill(c)
-                .frame(width: 22, height: 22)
+                .frame(width: 24, height: 24)
                 .overlay(Circle().strokeBorder(Theme.border, lineWidth: c == .black ? 0 : 0.5))
                 .overlay(
                     Circle()
                         .strokeBorder(Theme.accent, lineWidth: selected ? 2.5 : 0)
                         .padding(-3)
                 )
+                // The visible dot stays small; the finger target doesn't.
+                .frame(width: 32, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -126,7 +129,7 @@ struct InkToolbar: View {
             Circle()
                 .fill(selected ? Theme.accent : Theme.muted)
                 .frame(width: min(w + 6, 26), height: min(w + 6, 26))
-                .frame(width: 32, height: 32)
+                .frame(width: 36, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

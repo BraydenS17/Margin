@@ -62,6 +62,7 @@ extension View {
 }
 
 /// Flat bordered icon button — the app's replacement for glass toolbar buttons.
+/// Sized to Apple's 44pt minimum touch target: this app is finger-first, not pointer-first.
 struct FlatIconButton: View {
     let systemName: String
     var label: String = ""
@@ -70,9 +71,9 @@ struct FlatIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.accent)
-                .frame(width: 36, height: 34)
+                .frame(width: 44, height: 44)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
