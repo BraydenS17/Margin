@@ -161,6 +161,7 @@ struct BlockListView: View {
         copy.indentLevel = block.indentLevel
         copy.tableData = block.tableData
         copy.linkedPageID = block.linkedPageID
+        copy.imageData = block.imageData
         for sibling in blocks where sibling.sortIndex > block.sortIndex {
             sibling.sortIndex += 1
         }

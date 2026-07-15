@@ -592,13 +592,31 @@ struct MarginTests {
 
     // MARK: - Notion editor: slash commands
 
-    @Test func slashMenuEmptyQueryOffersEverythingExceptImages() {
+    @Test func slashMenuEmptyQueryOffersEveryBlockType() {
         let matches = BlockOutline.slashMatches("")
-        #expect(!matches.isEmpty)
-        #expect(!matches.contains(.image))
-        #expect(matches.contains(.toggle))
-        #expect(matches.contains(.code))
-        #expect(matches.contains(.pageLink))
+        #expect(matches == BlockType.allCases)
+        // Images became insertable once picking a real photo shipped.
+        #expect(matches.contains(.image))
+    }
+
+    @Test func imageDataDefaultsNilAndRoundTrips() throws {
+        let context = try makeContext()
+        let page = Page(title: "Photos")
+        context.insert(page)
+        let block = Block(type: .image, sortIndex: 0, page: page)
+        context.insert(block)
+        #expect(block.imageData == nil)
+
+        let bytes = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03])
+        block.imageData = bytes
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Block>()).first { $0.type == .image }
+        #expect(fetched?.imageData == bytes)
+
+        fetched?.imageData = nil
+        try context.save()
+        #expect(fetched?.imageData == nil)
     }
 
     @Test func slashMenuFiltersCaseInsensitively() {

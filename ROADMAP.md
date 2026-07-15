@@ -77,6 +77,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Page rows gained swipe actions (favorite / rename / delete) so no essential action is long-press-only; list rows and property chips loosened for finger use.
 - Text-box grip bar enlarged for fingertip dragging.
 
+### Image blocks (`feature/image-blocks`)
+- The block editor's last placeholder is real: image blocks hold a photo picked from the library (PhotosPicker), rendered inline; empty ones show a dashed "Add a photo" target.
+- Long-press to replace or remove; oversized photos are downscaled/re-encoded (~1600pt JPEG) before hitting the store (`.externalStorage`, CloudKit-safe optional).
+- Images render in PDF export and thumbnails, ride page/block duplication, and are offered by the slash menu (previously excluded).
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).

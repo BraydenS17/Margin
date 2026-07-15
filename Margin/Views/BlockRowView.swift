@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct BlockRowView: View {
     @Bindable var block: Block
@@ -169,15 +170,103 @@ struct BlockRowView: View {
                 .padding(.vertical, 4)
 
         case .image:
-            Label("Image blocks aren't supported yet", systemImage: "photo")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.vertical, 8)
+            ImageBlockView(block: block)
+                .padding(.vertical, 4)
 
         case .table:
             TableBlockView(block: block)
                 .padding(.vertical, 6)
         }
+    }
+}
+
+/// A photo living in the block flow: empty blocks show a dashed "Add a photo" target,
+/// filled ones render the picture with swap/remove controls on long-press.
+private struct ImageBlockView: View {
+    @Bindable var block: Block
+
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var showingPicker = false
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            if let data = block.imageData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 460)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Theme.border, lineWidth: 1)
+                    )
+                    .contextMenu {
+                        Button("Replace Photo", systemImage: "photo.on.rectangle.angled") {
+                            // Re-present the picker by clearing the item first.
+                            pickerItem = nil
+                            showingPicker = true
+                        }
+                        Button("Remove Photo", systemImage: "xmark.circle") {
+                            block.imageData = nil
+                            block.updatedAt = Date()
+                        }
+                    }
+                    .onTapGesture { showingPicker = true }
+                    .accessibilityLabel("Photo. Tap to replace.")
+            } else {
+                emptyTarget
+            }
+            #else
+            emptyTarget
+            #endif
+        }
+        .photosPicker(isPresented: $showingPicker, selection: $pickerItem, matching: .images)
+        .onChange(of: pickerItem) { _, item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+                block.imageData = Self.downscaled(data)
+                block.updatedAt = Date()
+                pickerItem = nil
+            }
+        }
+    }
+
+    private var emptyTarget: some View {
+        Button {
+            showingPicker = true
+        } label: {
+            Label("Add a photo", systemImage: "photo.badge.plus")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Add a Photo")
+    }
+
+    /// Camera photos run 5-10 MB each; a note page doesn't need more than ~1600pt of
+    /// pixels, so re-encode anything bigger before it hits the store.
+    private static func downscaled(_ data: Data) -> Data {
+        #if os(iOS)
+        let maxDimension: CGFloat = 1600
+        guard let image = UIImage(data: data) else { return data }
+        let largest = max(image.size.width, image.size.height)
+        guard largest > maxDimension else { return data }
+        let scale = maxDimension / largest
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let resized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+        return resized.jpegData(compressionQuality: 0.85) ?? data
+        #else
+        return data
+        #endif
     }
 }
 

@@ -24,6 +24,10 @@ final class Block {
     // JSON-encoded BlockTableData; only meaningful when type == .table.
     var tableData: Data?
 
+    // The picked photo, only meaningful when type == .image. External storage keeps
+    // the blob out of the SQLite row; optional keeps the schema CloudKit-compatible.
+    @Attribute(.externalStorage) var imageData: Data?
+
     var page: Page?
 
     init(

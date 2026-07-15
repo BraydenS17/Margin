@@ -25,7 +25,7 @@ enum BlockOutline {
     /// The block types offered by the slash-command menu, filtered by the query the
     /// user has typed after "/". Empty query returns the full menu.
     static func slashMatches(_ query: String) -> [BlockType] {
-        let insertable = BlockType.allCases.filter { $0 != .image }
+        let insertable = BlockType.allCases
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return insertable }
         return insertable.filter {
