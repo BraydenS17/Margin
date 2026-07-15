@@ -286,6 +286,8 @@ struct PageListView: View {
             blockCopy.isChecked = block.isChecked
             blockCopy.indentLevel = block.indentLevel
             blockCopy.tableData = block.tableData
+            blockCopy.linkedPageID = block.linkedPageID
+            blockCopy.imageData = block.imageData
             modelContext.insert(blockCopy)
         }
         for (index, sibling) in pages.enumerated() {

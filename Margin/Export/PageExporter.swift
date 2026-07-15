@@ -234,7 +234,13 @@ private struct PageExportContent: View {
             }
             .font(.system(size: 13))
         case .image:
-            EmptyView()
+            if let data = block.imageData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 380)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
         case .table:
             tableView(block.table)
         }
