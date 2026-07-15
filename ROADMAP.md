@@ -72,6 +72,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - **Handwritten template** in the New Page picker; canvas pages open in Draw mode, and flipping past the last page continues the same kind.
 - **Text boxes** on canvas pages: freely positioned, dragged by a grip handle (so dragging never fights text editing), width presets, context-menu delete, cascade-deleted with the page; rendered in PDF export/thumbnails at their stored positions.
 
+### iPad touch ergonomics (`feature/ipad-ergonomics`)
+- All icon buttons, the mode toggle, and ink-toolbar controls brought up to the 44pt minimum touch target (small visuals keep 44pt hit frames where a big glyph would look heavy).
+- Page rows gained swipe actions (favorite / rename / delete) so no essential action is long-press-only; list rows and property chips loosened for finger use.
+- Text-box grip bar enlarged for fingertip dragging.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
