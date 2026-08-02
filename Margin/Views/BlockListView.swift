@@ -67,6 +67,13 @@ struct BlockListView: View {
                                     apply(type, to: block)
                                 }
                             }
+                            if let query = activeMentionQuery(for: block) {
+                                MentionMenu(
+                                    query: query,
+                                    onSelectPage: { page in applyMention(RichText.pageMentionToken(title: page.title, id: page.id), query: query, to: block) },
+                                    onSelectDate: { date in applyMention(RichText.dateMentionToken(date: date), query: query, to: block) }
+                                )
+                            }
                         }
                         .background(
                             GeometryReader { proxy in
@@ -118,6 +125,20 @@ struct BlockListView: View {
         } else {
             focusedBlock = nil
         }
+    }
+
+    // MARK: - @-mentions
+
+    /// The mention menu shows under the focused block while its text ends in an
+    /// unclosed "@query".
+    private func activeMentionQuery(for block: Block) -> String? {
+        guard focusedBlock == block.id, block.type.isTextual else { return nil }
+        return RichText.activeMentionQuery(in: block.textContent)
+    }
+
+    private func applyMention(_ token: String, query: String, to block: Block) {
+        block.textContent = RichText.inserting(mentionToken: token, replacingQuery: query, in: block.textContent)
+        block.updatedAt = Date()
     }
 
     // MARK: - Return-key flow
@@ -278,5 +299,95 @@ private struct SlashCommandMenu: View {
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
         .padding(.vertical, 6)
+    }
+}
+
+/// The Notion-style "@" menu: quick date mentions plus every page whose title matches
+/// the query, appearing under the block being typed in.
+private struct MentionMenu: View {
+    let query: String
+    let onSelectPage: (Page) -> Void
+    let onSelectDate: (Date) -> Void
+
+    @Query(sort: \Page.updatedAt, order: .reverse) private var allPages: [Page]
+
+    private var matchingPages: [Page] {
+        let pool = query.isEmpty ? allPages : allPages.filter { $0.title.localizedCaseInsensitiveContains(query) }
+        return Array(pool.prefix(6))
+    }
+
+    private var showsToday: Bool { query.isEmpty || "today".localizedCaseInsensitiveContains(query) }
+    private var showsTomorrow: Bool { query.isEmpty || "tomorrow".localizedCaseInsensitiveContains(query) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(query.isEmpty ? "Mention a page or date" : "Matching “\(query)”")
+                .metaLabel()
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
+
+            if showsToday {
+                dateRow(title: "Today", date: Date())
+            }
+            if showsTomorrow {
+                dateRow(title: "Tomorrow", date: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date())
+            }
+            ForEach(matchingPages) { page in
+                Button {
+                    onSelectPage(page)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 24)
+                        Text(page.title)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Theme.text)
+                            .lineLimit(1)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            if matchingPages.isEmpty && !showsToday && !showsTomorrow {
+                Text("No matches — keep typing or delete the “@”")
+                    .font(.callout)
+                    .foregroundStyle(Theme.muted)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            }
+        }
+        .padding(.bottom, 6)
+        .frame(maxWidth: 340, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+        .padding(.vertical, 6)
+    }
+
+    private func dateRow(title: String, date: Date) -> some View {
+        Button {
+            onSelectDate(date)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 24)
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.text)
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

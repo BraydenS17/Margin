@@ -95,6 +95,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Rendered as real styling (bold weight, italic, underline, strikethrough, monospaced, yellow highlight background) whenever a block isn't focused; editing drops back to the raw markers so typing stays a plain `TextField` (SwiftUI has no native live-formatting text view).
 - Applies to heading, paragraph, bullet/numbered list, callout, and quote blocks; renders in PDF export too. Checkbox/toggle/code blocks stay plain text.
 
+### @-mentions (`feature/mentions`)
+- Typing `@` inline (anywhere in a textual block, not just at the start) opens a filter-as-you-type menu offering Today/Tomorrow date mentions plus any page whose title matches.
+- Resolves to a stable inline token (`@[[Title|PAGE:uuid]]` / `@[[date|DATE:iso]]`) stored in plain `textContent`, parsed by `RichText` alongside the style markers and rendered as an accent-tinted pill.
+- v1 scope: mentions are a styled inline reference, not yet tap-to-navigate (consistent with how all formatted text currently behaves — tapping unfocused text re-enters edit mode).
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
