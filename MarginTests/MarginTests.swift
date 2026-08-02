@@ -850,4 +850,49 @@ struct MarginTests {
         let text = "Nothing matches here"
         #expect(SearchIndex.excerpt(of: text, around: "zzz") == text)
     }
+
+    // MARK: - Nested pages
+
+    @Test func pageOutlineHidesCollapsedSubpagesAndFlagsHasChildren() throws {
+        let context = try makeContext()
+        let parent = Page(title: "Parent", sortIndex: 0)
+        context.insert(parent)
+        let child = Page(title: "Child", sortIndex: 0)
+        child.parentPage = parent
+        context.insert(child)
+        let grandchild = Page(title: "Grandchild", sortIndex: 0)
+        grandchild.parentPage = child
+        context.insert(grandchild)
+        let sibling = Page(title: "Sibling", sortIndex: 1)
+        context.insert(sibling)
+
+        let collapsed = PageOutline.visible(topLevel: [parent, sibling], expanded: [])
+        #expect(collapsed.map(\.page.title) == ["Parent", "Sibling"])
+        #expect(collapsed.first?.hasChildren == true)
+        #expect(collapsed.last?.hasChildren == false)
+
+        let oneLevel = PageOutline.visible(topLevel: [parent, sibling], expanded: [parent.id])
+        #expect(oneLevel.map(\.page.title) == ["Parent", "Child", "Sibling"])
+        #expect(oneLevel.map(\.depth) == [0, 1, 0])
+
+        let fullyExpanded = PageOutline.visible(topLevel: [parent, sibling], expanded: [parent.id, child.id])
+        #expect(fullyExpanded.map(\.page.title) == ["Parent", "Child", "Grandchild", "Sibling"])
+        #expect(fullyExpanded.map(\.depth) == [0, 1, 2, 0])
+    }
+
+    @Test func deletingParentPageCascadesToSubpages() throws {
+        let context = try makeContext()
+        let parent = Page(title: "Parent")
+        context.insert(parent)
+        let child = Page(title: "Child")
+        child.parentPage = parent
+        context.insert(child)
+        try context.save()
+
+        context.delete(parent)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<Page>())
+        #expect(remaining.isEmpty)
+    }
 }

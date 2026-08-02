@@ -29,6 +29,13 @@ final class Page {
 
     var notebook: Notebook?
 
+    // Self-referencing nesting (Notion-style "page inside a page"), independent of
+    // notebook grouping. Deleting a page deletes its subpages too.
+    var parentPage: Page?
+
+    @Relationship(deleteRule: .cascade, inverse: \Page.parentPage)
+    var subpages: [Page]? = []
+
     @Relationship(deleteRule: .cascade, inverse: \Block.page)
     var blocks: [Block]? = []
 
