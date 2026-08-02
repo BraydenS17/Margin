@@ -175,19 +175,19 @@ private struct PageExportContent: View {
     private func blockView(_ block: Block, numberedIndex: Int) -> some View {
         switch block.type {
         case .heading:
-            Text(block.textContent).font(.system(size: 19, weight: .bold))
+            Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 19, weight: .bold)))
         case .paragraph:
-            Text(block.textContent).font(.system(size: 13))
+            Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 13)))
         case .bulletList:
             HStack(alignment: .top, spacing: 8) {
                 Text("•")
-                Text(block.textContent)
+                Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 13)))
             }
             .font(.system(size: 13))
         case .numberedList:
             HStack(alignment: .top, spacing: 8) {
                 Text("\(numberedIndex).").foregroundStyle(.secondary)
-                Text(block.textContent)
+                Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 13)))
             }
             .font(.system(size: 13))
         case .checkbox:
@@ -202,7 +202,7 @@ private struct PageExportContent: View {
         case .callout:
             HStack(alignment: .top, spacing: 8) {
                 Text("💡")
-                Text(block.textContent)
+                Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 13)))
             }
             .font(.system(size: 13))
             .padding(10)
@@ -210,7 +210,7 @@ private struct PageExportContent: View {
         case .quote:
             HStack(spacing: 8) {
                 Rectangle().fill(.secondary).frame(width: 3)
-                Text(block.textContent).italic()
+                Text(RichText.attributedString(from: block.textContent, baseFont: .system(size: 13).italic()))
             }
             .font(.system(size: 13))
         case .toggle:
