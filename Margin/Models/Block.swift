@@ -28,6 +28,10 @@ final class Block {
     // the blob out of the SQLite row; optional keeps the schema CloudKit-compatible.
     @Attribute(.externalStorage) var imageData: Data?
 
+    // Seconds into the page's audioData when this block was created, only meaningful
+    // while the page has a recording. Nil means "not linked to a moment in the audio".
+    var audioTimestamp: Double?
+
     var page: Page?
 
     init(

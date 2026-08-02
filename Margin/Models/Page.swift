@@ -27,6 +27,11 @@ final class Page {
 
     var inkData: Data?
 
+    // Lecture audio recorded alongside this page's notes. External storage keeps the
+    // blob out of the SQLite row; optional keeps the schema CloudKit-compatible.
+    @Attribute(.externalStorage) var audioData: Data?
+    var audioDuration: Double?
+
     var notebook: Notebook?
 
     // Self-referencing nesting (Notion-style "page inside a page"), independent of

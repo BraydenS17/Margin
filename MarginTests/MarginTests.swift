@@ -1102,4 +1102,38 @@ struct MarginTests {
         #expect(bounds != nil)
         #expect(bounds!.upperBound < 1000)
     }
+
+    // MARK: - Audio sync
+
+    @Test func pageAudioFieldsDefaultNilAndRoundTrip() throws {
+        let context = try makeContext()
+        let page = Page(title: "Lecture")
+        context.insert(page)
+        #expect(page.audioData == nil)
+        #expect(page.audioDuration == nil)
+
+        let bytes = Data([0x00, 0x01, 0x02])
+        page.audioData = bytes
+        page.audioDuration = 42.5
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Page>()).first
+        #expect(fetched?.audioData == bytes)
+        #expect(fetched?.audioDuration == 42.5)
+    }
+
+    @Test func blockAudioTimestampDefaultsNilAndRoundTrips() throws {
+        let context = try makeContext()
+        let page = Page(title: "Lecture")
+        context.insert(page)
+        let block = Block(type: .paragraph, sortIndex: 0, page: page)
+        context.insert(block)
+        #expect(block.audioTimestamp == nil)
+
+        block.audioTimestamp = 12.5
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Block>()).first
+        #expect(fetched?.audioTimestamp == 12.5)
+    }
 }
