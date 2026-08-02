@@ -17,9 +17,20 @@ struct PageListView: View {
     @State private var showingPDFImporter = false
     @State private var renameTarget: Page?
     @State private var notebookRenameTarget: Notebook?
+    @State private var expandedPageIDs: Set<UUID> = []
 
     private var pages: [Page] {
         (notebook.pages ?? []).sorted { $0.sortIndex < $1.sortIndex }
+    }
+
+    /// Only top-level pages (no parent) are grouped by notebook; nested subpages render
+    /// under their parent row via `visibleNodes`, regardless of notebook.
+    private var topLevelPages: [Page] {
+        pages.filter { $0.parentPage == nil }
+    }
+
+    private var visibleNodes: [PageOutline.Node] {
+        PageOutline.visible(topLevel: topLevelPages, expanded: expandedPageIDs)
     }
 
     private var childNotebooks: [Notebook] {
@@ -29,7 +40,7 @@ struct PageListView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            if pages.isEmpty && childNotebooks.isEmpty {
+            if topLevelPages.isEmpty && childNotebooks.isEmpty {
                 emptyState
             } else {
                 List(selection: $selectedPage) {
@@ -60,8 +71,15 @@ struct PageListView: View {
                             Text("Sub-notebooks").metaLabel()
                         }
                     }
-                    ForEach(pages) { page in
-                        PageRow(page: page)
+                    ForEach(visibleNodes, id: \.page.id) { node in
+                        let page = node.page
+                        PageRow(
+                            page: page,
+                            depth: node.depth,
+                            hasChildren: node.hasChildren,
+                            isExpanded: expandedPageIDs.contains(page.id),
+                            toggleExpanded: { toggleExpanded(page) }
+                        )
                             .tag(page)
                             // Touch-first: the essentials ride swipes, so nothing forces a long-press.
                             .swipeActions(edge: .leading, allowsFullSwipe: true) {
@@ -106,6 +124,12 @@ struct PageListView: View {
                                         ForEach(otherNotebooks) { destination in
                                             Button(destination.title) { move(page, to: destination) }
                                         }
+                                    }
+                                }
+                                if page.parentPage != nil {
+                                    Button("Move to Top Level", systemImage: "arrow.turn.left.up") {
+                                        page.parentPage = nil
+                                        page.updatedAt = Date()
                                     }
                                 }
                             }
@@ -252,6 +276,14 @@ struct PageListView: View {
         modelContext.delete(page)
     }
 
+    private func toggleExpanded(_ page: Page) {
+        if expandedPageIDs.contains(page.id) {
+            expandedPageIDs.remove(page.id)
+        } else {
+            expandedPageIDs.insert(page.id)
+        }
+    }
+
     /// Sibling notebooks a page could move to (flattened, excluding the current one).
     private var otherNotebooks: [Notebook] {
         guard let workspace = notebook.workspace else { return [] }
@@ -298,6 +330,9 @@ struct PageListView: View {
 
     private func move(_ page: Page, to destination: Notebook) {
         if selectedPage === page { selectedPage = nil }
+        // Moving out of the current notebook also detaches it from any parent page,
+        // since a subpage nested here wouldn't make sense sitting in a new notebook.
+        page.parentPage = nil
         page.notebook = destination
         page.sortIndex = destination.pages?.count ?? 0
         page.updatedAt = Date()
@@ -306,6 +341,10 @@ struct PageListView: View {
 
 private struct PageRow: View {
     @Bindable var page: Page
+    var depth: Int = 0
+    var hasChildren: Bool = false
+    var isExpanded: Bool = false
+    var toggleExpanded: () -> Void = {}
 
     private var blockCount: Int { page.blocks?.count ?? 0 }
 
@@ -331,6 +370,23 @@ private struct PageRow: View {
 
     var body: some View {
         HStack(spacing: 13) {
+            if depth > 0 {
+                Color.clear.frame(width: CGFloat(depth) * 22)
+            }
+            if hasChildren {
+                Button(action: toggleExpanded) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Theme.muted)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .frame(width: 30, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isExpanded ? "Collapse Subpages" : "Expand Subpages")
+            } else if depth > 0 {
+                Color.clear.frame(width: 30)
+            }
             RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(Theme.accent)
                 .frame(width: 3, height: 46)

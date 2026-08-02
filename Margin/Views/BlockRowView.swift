@@ -334,22 +334,39 @@ private struct PageLinkBlockView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Open \(page.title)")
             } else {
-                Button {
-                    showingPicker = true
-                } label: {
-                    Label("Link a page…", systemImage: "link")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
-                        )
+                HStack(spacing: 8) {
+                    Button {
+                        showingPicker = true
+                    } label: {
+                        Label("Link a page…", systemImage: "link")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Link a Page")
+
+                    Button(action: createSubpage) {
+                        Label("New sub-page", systemImage: "doc.badge.plus")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("New Sub-page")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Link a Page")
             }
         }
         .sheet(isPresented: $showingPicker) {
@@ -358,6 +375,22 @@ private struct PageLinkBlockView: View {
                 block.updatedAt = Date()
             }
         }
+    }
+
+    /// Creates a page nested under the current page and links this block to it,
+    /// then jumps straight in — the Notion "New page" flow.
+    private func createSubpage() {
+        guard let parent = block.page else { return }
+        let child = Page(
+            title: "Untitled Page",
+            notebook: parent.notebook,
+            sortIndex: parent.subpages?.count ?? 0
+        )
+        child.parentPage = parent
+        modelContext.insert(child)
+        block.linkedPageID = child.id
+        block.updatedAt = Date()
+        onOpenPage?(child)
     }
 }
 

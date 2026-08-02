@@ -82,6 +82,14 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Long-press to replace or remove; oversized photos are downscaled/re-encoded (~1600pt JPEG) before hitting the store (`.externalStorage`, CloudKit-safe optional).
 - Images render in PDF export and thumbnails, ride page/block duplication, and are offered by the slash menu (previously excluded).
 
+### Content search (`feature/content-search`)
+- Library search matches block text, not just page titles, and shows an excerpt centered on the hit.
+
+### Nested sub-pages (`feature/nested-pages`)
+- Pages can nest inside other pages (`Page.parentPage`/`subpages`, cascade delete), independent of notebook grouping.
+- The page-link block offers "New sub-page" alongside "Link a page…", creating and jumping straight into a child page.
+- The page list shows nested pages as expandable/collapsible rows under their parent (`PageOutline.visible`, mirroring the toggle-block collapse logic).
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
