@@ -307,6 +307,8 @@ struct PageListView: View {
         )
         copy.icon = page.icon
         copy.inkData = page.inkData
+        copy.audioData = page.audioData
+        copy.audioDuration = page.audioDuration
         modelContext.insert(copy)
         for block in (page.blocks ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
             let blockCopy = Block(
@@ -320,6 +322,7 @@ struct PageListView: View {
             blockCopy.tableData = block.tableData
             blockCopy.linkedPageID = block.linkedPageID
             blockCopy.imageData = block.imageData
+            blockCopy.audioTimestamp = block.audioTimestamp
             modelContext.insert(blockCopy)
         }
         for (index, sibling) in pages.enumerated() {

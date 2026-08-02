@@ -12,6 +12,9 @@ struct BlockRowView: View {
     /// this block, `tail` belongs in the next one.
     var onSplit: (String, String) -> Void = { _, _ in }
     var onOpenPage: ((Page) -> Void)? = nil
+    /// Called when the user taps a block's audio-timestamp chip; seeks the page's
+    /// lecture recording to that moment and starts playback.
+    var onSeekAudio: ((Double) -> Void)? = nil
 
     @State private var showingFlashcardSheet = false
 
@@ -19,7 +22,12 @@ struct BlockRowView: View {
     private static let indentStep: CGFloat = 24
 
     var body: some View {
-        content
+        HStack(alignment: .top, spacing: 8) {
+            if let timestamp = block.audioTimestamp, let onSeekAudio {
+                audioTimestampChip(timestamp, action: onSeekAudio)
+            }
+            content
+        }
             .padding(.leading, CGFloat(min(block.indentLevel, Self.maxIndent)) * Self.indentStep)
             .onChange(of: block.textContent) { _, newValue in
                 guard block.type.isTextual, let split = BlockOutline.splitOnReturn(newValue) else { return }
@@ -53,6 +61,30 @@ struct BlockRowView: View {
             .sheet(isPresented: $showingFlashcardSheet) {
                 MakeFlashcardSheet(frontText: RichText.plainText(from: block.textContent))
             }
+    }
+
+    /// A small "jump to this moment in the lecture recording" pill, shown only on
+    /// blocks created while a recording was active.
+    private func audioTimestampChip(_ seconds: Double, action: @escaping (Double) -> Void) -> some View {
+        let total = max(0, Int(seconds.rounded()))
+        let label = String(format: "%d:%02d", total / 60, total % 60)
+        return Button {
+            action(seconds)
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "waveform")
+                    .font(.system(size: 9, weight: .bold))
+                Text(label)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+            }
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Theme.accent.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 6)
+        .accessibilityLabel("Jump to \(label) in recording")
     }
 
     @ViewBuilder

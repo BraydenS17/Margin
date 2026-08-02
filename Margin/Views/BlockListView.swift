@@ -11,6 +11,7 @@ private struct BlockHeightPreferenceKey: PreferenceKey {
 struct BlockListView: View {
     @Bindable var page: Page
     var onOpenPage: ((Page) -> Void)? = nil
+    var audioController: PageAudioController? = nil
 
     @Environment(\.modelContext) private var modelContext
     @State private var rowHeights: [UUID: CGFloat] = [:]
@@ -36,6 +37,7 @@ struct BlockListView: View {
             if blocks.isEmpty {
                 Button {
                     let block = Block(type: .paragraph, sortIndex: 0, page: page)
+                    block.audioTimestamp = audioController?.currentTimestamp
                     modelContext.insert(block)
                     focusedBlock = block.id
                 } label: {
@@ -59,7 +61,13 @@ struct BlockListView: View {
                                 onDelete: { delete(block) },
                                 onDuplicate: { duplicate(block) },
                                 onSplit: { head, tail in split(block, head: head, tail: tail) },
-                                onOpenPage: onOpenPage
+                                onOpenPage: onOpenPage,
+                                onSeekAudio: audioController.map { controller in
+                                    { time in
+                                        controller.seek(to: time)
+                                        controller.play()
+                                    }
+                                }
                             )
                             .padding(.vertical, 3)
                             if isSlashMenuActive(for: block) {
@@ -162,6 +170,7 @@ struct BlockListView: View {
         let continuation: BlockType = listTypes.contains(block.type) ? block.type : .paragraph
         let next = Block(type: continuation, textContent: tail, sortIndex: block.sortIndex + 1, page: page)
         next.indentLevel = block.indentLevel
+        next.audioTimestamp = audioController?.currentTimestamp
         for sibling in blocks where sibling.sortIndex > block.sortIndex {
             sibling.sortIndex += 1
         }
@@ -183,6 +192,7 @@ struct BlockListView: View {
         copy.tableData = block.tableData
         copy.linkedPageID = block.linkedPageID
         copy.imageData = block.imageData
+        copy.audioTimestamp = block.audioTimestamp
         for sibling in blocks where sibling.sortIndex > block.sortIndex {
             sibling.sortIndex += 1
         }

@@ -113,9 +113,16 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - `MathExpression` is a small hand-written recursive-descent parser/evaluator (`+ - * / ^`, parens, `sin/cos/tan/sqrt/abs/log/ln/exp`, constants `pi`/`e`) — no third-party dependency. Domain errors (sqrt of negative, div by zero, log of non-positive) return `nil` per-point rather than drawing garbage, and the curve breaks into separate runs at discontinuities (e.g. `1/x`) instead of connecting across the asymptote.
 - Fixed x domain (−10…10) with auto-scaled, outlier-clamped y range; `GraphCanvas` is shared between the live block and PDF export.
 
+### Audio recording synced to notes (`feature/audio-sync`)
+- Record lecture audio per page (`Page.audioData`/`audioDuration`, `.externalStorage`, CloudKit-safe optional) via a compact record/playback bar under the page properties.
+- Every block created while a recording is active stamps `Block.audioTimestamp` — the elapsed recording time at creation. Those blocks show a small "⌇ 3:42"-style chip that seeks and plays the page's recording from that moment.
+- `PageAudioController` wraps `AVAudioRecorder`/`AVAudioPlayer`; iOS-only (stubbed no-op on other platforms, matching the PencilKit pattern elsewhere). Requires `NSMicrophoneUsageDescription` (added to the Xcode build settings' generated Info.plist).
+- **Needs on-device verification** — the record→stop→playback round trip couldn't be driven interactively in Simulator (no scripted-tap capability); only the static UI state and the underlying model round-trips were verified this session.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
+- **On-device check of lecture-audio record/playback** (Simulator has no scripted-tap capability to drive the record→stop→playback flow interactively).
 - Slash menu / return-key feel on a physical keyboard, and Pencil features (see deferred device checks).
 
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)

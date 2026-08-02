@@ -15,6 +15,7 @@ struct PageDetailView: View {
     @State private var inkUndoController = InkUndoController()
     @State private var previousInkTool: InkToolKind = .pen
     @State private var pencilDetected = false
+    @State private var audioController = PageAudioController()
     @AppStorage("inkInputMode") private var inputModeRaw = InkInputMode.auto.rawValue
     #if os(iOS)
     @State private var exportedFile: ExportedFile?
@@ -201,11 +202,15 @@ struct PageDetailView: View {
                                     .metaLabel()
                                 PagePropertiesBar(page: page)
                                     .padding(.top, 2)
+                                if page.kind == .document {
+                                    AudioBar(page: page, controller: audioController)
+                                        .padding(.top, 2)
+                                }
                             }
                             .padding(.horizontal, 22)
                             .padding(.top, 20)
                             if page.kind == .document {
-                                BlockListView(page: page, onOpenPage: onOpenPage)
+                                BlockListView(page: page, onOpenPage: onOpenPage, audioController: audioController)
                             }
                             BacklinksView(page: page, onOpenPage: onOpenPage)
                         }
@@ -282,6 +287,7 @@ struct PageDetailView: View {
                 addBlockButton(.code)
                 addBlockButton(.pageLink)
                 addBlockButton(.image)
+                addBlockButton(.graph)
                 addBlockButton(.divider)
             }
         } label: {
@@ -301,7 +307,9 @@ struct PageDetailView: View {
     private func addBlockButton(_ type: BlockType) -> some View {
         Button {
             let count = page.blocks?.count ?? 0
-            modelContext.insert(Block(type: type, sortIndex: count, page: page))
+            let block = Block(type: type, sortIndex: count, page: page)
+            block.audioTimestamp = audioController.currentTimestamp
+            modelContext.insert(block)
         } label: {
             Label(type.displayName, systemImage: type.systemImage)
         }
