@@ -108,6 +108,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - `RichText` now also parses `^superscript^`, `~subscript~`, `\sqrt{x}`, and `\frac{a}{b}` — typed directly like the other markers, no menu.
 - Superscript/subscript render via `AttributedString.baselineOffset`; `\sqrt`/`\frac` render as a precomposed display string (√(x), a⁄b). v1 scope: no nested markers inside `\sqrt{}`/`\frac{}{}` braces.
 
+### Function grapher (`feature/grapher`)
+- New **Graph** block type: type an expression (`y = x^2 - 3`, `y = 3sin(x)`, implicit multiplication supported) and it renders a live axis + curve plot below the input.
+- `MathExpression` is a small hand-written recursive-descent parser/evaluator (`+ - * / ^`, parens, `sin/cos/tan/sqrt/abs/log/ln/exp`, constants `pi`/`e`) — no third-party dependency. Domain errors (sqrt of negative, div by zero, log of non-positive) return `nil` per-point rather than drawing garbage, and the curve breaks into separate runs at discontinuities (e.g. `1/x`) instead of connecting across the asymptote.
+- Fixed x domain (−10…10) with auto-scaled, outlier-clamped y range; `GraphCanvas` is shared between the live block and PDF export.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).

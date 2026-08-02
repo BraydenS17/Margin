@@ -46,6 +46,7 @@ enum BlockType: String, CaseIterable {
     case toggle
     case code
     case pageLink
+    case graph
 
     var displayName: String {
         switch self {
@@ -62,6 +63,7 @@ enum BlockType: String, CaseIterable {
         case .toggle: return "Toggle"
         case .code: return "Code"
         case .pageLink: return "Page Link"
+        case .graph: return "Graph"
         }
     }
 
@@ -80,6 +82,7 @@ enum BlockType: String, CaseIterable {
         case .toggle: return "chevron.forward.square"
         case .code: return "curlybraces"
         case .pageLink: return "link"
+        case .graph: return "chart.xyaxis.line"
         }
     }
 
@@ -89,7 +92,7 @@ enum BlockType: String, CaseIterable {
         switch self {
         case .heading, .paragraph, .bulletList, .numberedList, .checkbox, .callout, .quote, .toggle:
             return true
-        case .image, .divider, .table, .code, .pageLink:
+        case .image, .divider, .table, .code, .pageLink, .graph:
             return false
         }
     }

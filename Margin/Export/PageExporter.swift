@@ -243,6 +243,21 @@ private struct PageExportContent: View {
             }
         case .table:
             tableView(block.table)
+        case .graph:
+            graphView(block.textContent)
+        }
+    }
+
+    @ViewBuilder
+    private func graphView(_ expression: String) -> some View {
+        if let node = try? MathExpression.parse(expression) {
+            let runs = MathExpression.sample(node, xMin: -10, xMax: 10)
+            let yRange = MathExpression.yBounds(for: runs) ?? -10...10
+            if !runs.isEmpty {
+                GraphCanvas(runs: runs, xRange: -10...10, yRange: yRange)
+                    .frame(height: 180)
+                    .background(Color.black.opacity(0.03), in: RoundedRectangle(cornerRadius: 6))
+            }
         }
     }
 

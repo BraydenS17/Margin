@@ -173,7 +173,67 @@ struct BlockRowView: View {
         case .table:
             TableBlockView(block: block)
                 .padding(.vertical, 6)
+
+        case .graph:
+            GraphBlockView(block: block)
+                .padding(.vertical, 6)
         }
+    }
+}
+
+/// A function grapher: the block's `textContent` holds the expression (e.g. "y = x^2"),
+/// parsed/evaluated by `MathExpression` and rendered as an axis + curve plot on a Canvas.
+private struct GraphBlockView: View {
+    @Bindable var block: Block
+
+    private static let domain: ClosedRange<Double> = -10...10
+
+    private var parsed: Result<MathExpression.Node, Error> {
+        Result { try MathExpression.parse(block.textContent) }
+    }
+
+    private var runs: [[MathExpression.Point]] {
+        guard case .success(let node) = parsed else { return [] }
+        return MathExpression.sample(node, xMin: Self.domain.lowerBound, xMax: Self.domain.upperBound)
+    }
+
+    private var yRange: ClosedRange<Double> {
+        MathExpression.yBounds(for: runs) ?? -10...10
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("y = x^2", text: $block.textContent, axis: .vertical)
+                .font(.system(size: 15, design: .monospaced))
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .padding(10)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Theme.border, lineWidth: 1))
+
+            if block.textContent.trimmingCharacters(in: .whitespaces).isEmpty {
+                EmptyView()
+            } else if runs.isEmpty {
+                Text(errorMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.horizontal, 4)
+            } else {
+                GraphCanvas(runs: runs, xRange: Self.domain, yRange: yRange)
+                    .frame(height: 220)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.border, lineWidth: 1))
+            }
+        }
+    }
+
+    private var errorMessage: String {
+        if case .failure = parsed {
+            return "Can't parse that expression — try something like y = x^2 - 3"
+        }
+        return "No points to plot in this range"
     }
 }
 
