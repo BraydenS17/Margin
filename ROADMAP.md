@@ -104,6 +104,10 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - "Make Flashcard" in any textual block's context menu, prefilling the front from the block's text (markers/mentions stripped via `RichText.plainText`) and letting the student fill in the back before saving into an existing or brand-new deck.
 - Connects the note-taking and flashcard/recall spaces, which were previously fully separate.
 
+### Inline math notation (`feature/math-notation`)
+- `RichText` now also parses `^superscript^`, `~subscript~`, `\sqrt{x}`, and `\frac{a}{b}` — typed directly like the other markers, no menu.
+- Superscript/subscript render via `AttributedString.baselineOffset`; `\sqrt`/`\frac` render as a precomposed display string (√(x), a⁄b). v1 scope: no nested markers inside `\sqrt{}`/`\frac{}{}` braces.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).

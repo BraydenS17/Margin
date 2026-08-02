@@ -1011,4 +1011,35 @@ struct MarginTests {
         try context.save()
         #expect(try context.fetch(FetchDescriptor<Flashcard>()).isEmpty)
     }
+
+    // MARK: - Math notation
+
+    @Test func superscriptAndSubscriptParseAsDistinctSpans() {
+        let spans = RichText.spans(from: "e^2^ and H~2~O")
+        #expect(spans.contains { $0.text == "2" && $0.superscript == true })
+        #expect(spans.contains { $0.text == "2" && $0.subscriptText == true })
+    }
+
+    @Test func sqrtRendersAsUnicodeRadical() {
+        let spans = RichText.spans(from: "solve \\sqrt{x+1} for x")
+        #expect(spans.contains { $0.text == "√(x+1)" && $0.isMath == true })
+    }
+
+    @Test func fracRendersAsFractionSlash() {
+        let spans = RichText.spans(from: "\\frac{1}{2} cup of sugar")
+        #expect(spans.first?.text == "1⁄2")
+        #expect(spans.first?.isMath == true)
+    }
+
+    @Test func mathConstructsCountAsFormatting() {
+        #expect(RichText.hasFormatting("\\sqrt{4}") == true)
+        #expect(RichText.hasFormatting("x^2^") == true)
+        #expect(RichText.hasFormatting("H~2~O") == true)
+        #expect(RichText.hasFormatting("plain") == false)
+    }
+
+    @Test func strikethroughStillWinsOverSingleTildeSubscript() {
+        let spans = RichText.spans(from: "~~gone~~")
+        #expect(spans == [RichText.Span(text: "gone", strikethrough: true)])
+    }
 }
