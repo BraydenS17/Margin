@@ -931,4 +931,48 @@ struct MarginTests {
     @Test func richTextEmptyStringProducesNoSpans() {
         #expect(RichText.spans(from: "") == [])
     }
+
+    // MARK: - @-mentions
+
+    @Test func activeMentionQueryDetectsTrailingAtToken() {
+        #expect(RichText.activeMentionQuery(in: "see @chem") == "chem")
+        #expect(RichText.activeMentionQuery(in: "see @") == "")
+        #expect(RichText.activeMentionQuery(in: "no mention here") == nil)
+        // "@" must follow a word boundary — an email-like "me@x.com" isn't a mention.
+        #expect(RichText.activeMentionQuery(in: "email me@x.com") == nil)
+    }
+
+    @Test func activeMentionQueryIgnoresAlreadyResolvedTokens() {
+        let id = UUID()
+        let token = RichText.pageMentionToken(title: "Chem 101", id: id)
+        #expect(RichText.activeMentionQuery(in: "see \(token)") == nil)
+    }
+
+    @Test func insertingMentionReplacesTrailingQuery() {
+        let id = UUID()
+        let token = RichText.pageMentionToken(title: "Chem 101", id: id)
+        let result = RichText.inserting(mentionToken: token, replacingQuery: "chem", in: "see @chem")
+        #expect(result == "see \(token) ")
+        #expect(RichText.activeMentionQuery(in: result) == nil)
+    }
+
+    @Test func resolvedPageMentionParsesAsStyledSpan() {
+        let id = UUID()
+        let token = RichText.pageMentionToken(title: "Chem 101", id: id)
+        let spans = RichText.spans(from: "before \(token) after")
+        #expect(spans.map(\.text) == ["before ", "@Chem 101", " after"])
+        #expect(spans[1].isMention == true)
+        #expect(RichText.hasFormatting("before \(token) after") == true)
+    }
+
+    @Test func dateMentionTokenRoundTripsAsMentionSpan() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let date = formatter.date(from: "2026-08-05")!
+        let token = RichText.dateMentionToken(date: date)
+        #expect(token.contains("DATE:2026-08-05"))
+        let spans = RichText.spans(from: token)
+        #expect(spans.count == 1)
+        #expect(spans[0].isMention == true)
+    }
 }
