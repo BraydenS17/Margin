@@ -827,4 +827,27 @@ struct MarginTests {
         #expect(board.first { $0.0 == .mastered }?.1.map(\.title) == ["Only One"])
         #expect(board.first { $0.0 == .inProgress }?.1.isEmpty == true)
     }
+
+    // MARK: - Search
+
+    @Test func excerptCentersOnMatchWithEllipses() {
+        let text = String(repeating: "a", count: 60) + "NEEDLE" + String(repeating: "b", count: 60)
+        let excerpt = SearchIndex.excerpt(of: text, around: "needle", radius: 10)
+        #expect(excerpt.contains("NEEDLE"))
+        #expect(excerpt.hasPrefix("…"))
+        #expect(excerpt.hasSuffix("…"))
+        #expect(excerpt.count < text.count)
+    }
+
+    @Test func excerptOmitsEllipsesWhenMatchNearEdges() {
+        let text = "NEEDLE in a short haystack"
+        let excerpt = SearchIndex.excerpt(of: text, around: "needle", radius: 40)
+        #expect(!excerpt.hasPrefix("…"))
+        #expect(excerpt == text)
+    }
+
+    @Test func excerptFallsBackToFullTextWhenQueryNotFound() {
+        let text = "Nothing matches here"
+        #expect(SearchIndex.excerpt(of: text, around: "zzz") == text)
+    }
 }

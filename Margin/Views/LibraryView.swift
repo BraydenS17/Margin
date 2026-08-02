@@ -62,14 +62,24 @@ struct LibraryView: View {
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    private var searchResults: [Page] {
+    private var searchResults: [SearchHit] {
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return [] }
         let pages = (try? modelContext.fetch(FetchDescriptor<Page>())) ?? []
         return pages
-            .filter { $0.title.localizedCaseInsensitiveContains(query) }
-            .sorted { $0.updatedAt > $1.updatedAt }
+            .compactMap { page -> SearchHit? in
+                if page.title.localizedCaseInsensitiveContains(query) {
+                    return SearchHit(page: page, snippet: nil)
+                }
+                let matchingBlock = (page.blocks ?? [])
+                    .sorted { $0.sortIndex < $1.sortIndex }
+                    .first { $0.textContent.localizedCaseInsensitiveContains(query) }
+                guard let matchingBlock else { return nil }
+                return SearchHit(page: page, snippet: SearchIndex.excerpt(of: matchingBlock.textContent, around: query))
+            }
+            .sorted { $0.page.updatedAt > $1.page.updatedAt }
     }
+
 
     private let columns = [GridItem(.adaptive(minimum: 210), spacing: 18)]
 
@@ -214,27 +224,34 @@ struct LibraryView: View {
                  ? "No Results"
                  : "\(searchResults.count) \(searchResults.count == 1 ? "Result" : "Results")")
                 .metaLabel()
-            ForEach(searchResults) { page in
+            ForEach(searchResults) { hit in
                 Button {
-                    if let notebook = page.notebook {
+                    if let notebook = hit.page.notebook {
                         searchText = ""
-                        onOpen(notebook, page)
+                        onOpen(notebook, hit.page)
                     }
                 } label: {
                     HStack(spacing: 13) {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(Theme.accent)
                             .frame(width: 3, height: 34)
-                        if !page.icon.isEmpty {
-                            Text(page.icon).font(.system(size: 16))
+                        if !hit.page.icon.isEmpty {
+                            Text(hit.page.icon).font(.system(size: 16))
                         }
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(page.title)
+                            Text(hit.page.title)
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Theme.text)
                                 .lineLimit(1)
-                            Text(page.notebook?.title ?? "No Notebook")
-                                .metaLabel()
+                            if let snippet = hit.snippet {
+                                Text(snippet)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.muted)
+                                    .lineLimit(1)
+                            } else {
+                                Text(hit.page.notebook?.title ?? "No Notebook")
+                                    .metaLabel()
+                            }
                         }
                         Spacer(minLength: 0)
                         Image(systemName: "arrow.forward")
@@ -582,4 +599,12 @@ struct LibraryView: View {
         modelContext.insert(notebook)
         onOpen(notebook, nil)
     }
+}
+
+/// A search result: either a title match (no snippet) or a block-content match
+/// (snippet is the excerpt around the hit).
+private struct SearchHit: Identifiable {
+    let page: Page
+    let snippet: String?
+    var id: UUID { page.id }
 }
