@@ -1042,4 +1042,64 @@ struct MarginTests {
         let spans = RichText.spans(from: "~~gone~~")
         #expect(spans == [RichText.Span(text: "gone", strikethrough: true)])
     }
+
+    // MARK: - Math expression grapher
+
+    @Test func evaluatesPolynomial() throws {
+        let node = try MathExpression.parse("y = x^2 - 3x + 2")
+        #expect(MathExpression.evaluate(node, x: 0) == 2)
+        #expect(MathExpression.evaluate(node, x: 1) == 0)
+        #expect(MathExpression.evaluate(node, x: 2) == 0)
+    }
+
+    @Test func supportsImplicitMultiplication() throws {
+        let node = try MathExpression.parse("2x")
+        #expect(MathExpression.evaluate(node, x: 3) == 6)
+
+        let parens = try MathExpression.parse("2(x+1)")
+        #expect(MathExpression.evaluate(parens, x: 3) == 8)
+    }
+
+    @Test func supportsFunctionsAndConstants() throws {
+        let sqrtNode = try MathExpression.parse("sqrt(x)")
+        #expect(MathExpression.evaluate(sqrtNode, x: 9) == 3)
+
+        let piNode = try MathExpression.parse("x * pi")
+        #expect(abs(MathExpression.evaluate(piNode, x: 1)! - Double.pi) < 0.0001)
+    }
+
+    @Test func domainErrorsReturnNilNotNaN() throws {
+        let sqrtNode = try MathExpression.parse("sqrt(x)")
+        #expect(MathExpression.evaluate(sqrtNode, x: -1) == nil)
+
+        let divideNode = try MathExpression.parse("1/x")
+        #expect(MathExpression.evaluate(divideNode, x: 0) == nil)
+    }
+
+    @Test func malformedExpressionThrows() {
+        #expect(throws: (any Error).self) {
+            try MathExpression.parse("x +")
+        }
+        #expect(throws: (any Error).self) {
+            try MathExpression.parse("unknown(x)")
+        }
+    }
+
+    @Test func samplingBreaksIntoRunsAtDiscontinuities() throws {
+        let node = try MathExpression.parse("1/x")
+        let runs = MathExpression.sample(node, xMin: -2, xMax: 2, count: 5)
+        // x = -2, -1, 0, 1, 2 -> x=0 is invalid, splitting into two runs.
+        #expect(runs.count == 2)
+    }
+
+    @Test func yBoundsClampsExtremeOutliers() {
+        let runs: [[MathExpression.Point]] = [[
+            MathExpression.Point(x: 0, y: 1),
+            MathExpression.Point(x: 1, y: 2),
+            MathExpression.Point(x: 2, y: 100_000),
+        ]]
+        let bounds = MathExpression.yBounds(for: runs, clampMagnitude: 1000)
+        #expect(bounds != nil)
+        #expect(bounds!.upperBound < 1000)
+    }
 }
