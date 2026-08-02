@@ -4,6 +4,10 @@ A unified notes workspace for iPad: **Notion-style structured docs + GoodNotes/N
 
 See [`ROADMAP.md`](ROADMAP.md) for what's built and what's next, and [`Margin/CLAUDE.md`](Margin/CLAUDE.md) for the full product/architecture spec.
 
+## Future idea: toolkits
+
+Major-specific feature packs (e.g. circuit-design tools for EE students, dosage-calc tables for nursing) toggled on per user, instead of cluttering the base app for everyone. Not committed or scoped — worth revisiting post-launch once there's real data on which majors/programs are actually using the app. Note: true third-party installable plugins aren't viable on iOS (App Store guidelines block downloading executable code post-install), so this would have to be app-bundled feature packs unlocked by a setting, not a real plugin marketplace.
+
 ## Tech stack
 
 - SwiftUI, iPad-first (also iPhone/Mac)
