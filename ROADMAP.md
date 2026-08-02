@@ -100,6 +100,10 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Resolves to a stable inline token (`@[[Title|PAGE:uuid]]` / `@[[date|DATE:iso]]`) stored in plain `textContent`, parsed by `RichText` alongside the style markers and rendered as an accent-tinted pill.
 - v1 scope: mentions are a styled inline reference, not yet tap-to-navigate (consistent with how all formatted text currently behaves — tapping unfocused text re-enters edit mode).
 
+### Flashcard-from-block (`feature/flashcard-from-block`)
+- "Make Flashcard" in any textual block's context menu, prefilling the front from the block's text (markers/mentions stripped via `RichText.plainText`) and letting the student fill in the back before saving into an existing or brand-new deck.
+- Connects the note-taking and flashcard/recall spaces, which were previously fully separate.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
