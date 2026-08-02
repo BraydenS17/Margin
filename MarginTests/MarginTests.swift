@@ -895,4 +895,40 @@ struct MarginTests {
         let remaining = try context.fetch(FetchDescriptor<Page>())
         #expect(remaining.isEmpty)
     }
+
+    // MARK: - Rich text
+
+    @Test func richTextParsesEachMarkerType() {
+        let spans = RichText.spans(from: "**bold** *italic* __under__ ~~strike~~ `code` ==hi==")
+        let styled = spans.filter { $0.text != " " }
+        #expect(styled.first { $0.text == "bold" }?.bold == true)
+        #expect(styled.first { $0.text == "italic" }?.italic == true)
+        #expect(styled.first { $0.text == "under" }?.underline == true)
+        #expect(styled.first { $0.text == "strike" }?.strikethrough == true)
+        #expect(styled.first { $0.text == "code" }?.code == true)
+        #expect(styled.first { $0.text == "hi" }?.highlight == true)
+    }
+
+    @Test func richTextPreservesPlainTextAroundMarkers() {
+        let spans = RichText.spans(from: "before **bold** after")
+        #expect(spans.map(\.text) == ["before ", "bold", " after"])
+        #expect(spans[0] == RichText.Span(text: "before "))
+        #expect(spans[1] == RichText.Span(text: "bold", bold: true))
+        #expect(spans[2] == RichText.Span(text: " after"))
+    }
+
+    @Test func richTextPlainStringHasNoSpansStyled() {
+        let spans = RichText.spans(from: "just plain text")
+        #expect(spans == [RichText.Span(text: "just plain text")])
+    }
+
+    @Test func richTextHasFormattingDetectsMarkersOnly() {
+        #expect(RichText.hasFormatting("plain text") == false)
+        #expect(RichText.hasFormatting("**bold**") == true)
+        #expect(RichText.hasFormatting("some `code` here") == true)
+    }
+
+    @Test func richTextEmptyStringProducesNoSpans() {
+        #expect(RichText.spans(from: "") == [])
+    }
 }

@@ -90,6 +90,11 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - The page-link block offers "New sub-page" alongside "Link a page…", creating and jumping straight into a child page.
 - The page list shows nested pages as expandable/collapsible rows under their parent (`PageOutline.visible`, mirroring the toggle-block collapse logic).
 
+### Inline rich text formatting (`feature/rich-text`)
+- Block text supports markdown-style inline markers — `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` ``, `==highlight==` — parsed by a pure, unit-tested `RichText` helper.
+- Rendered as real styling (bold weight, italic, underline, strikethrough, monospaced, yellow highlight background) whenever a block isn't focused; editing drops back to the raw markers so typing stays a plain `TextField` (SwiftUI has no native live-formatting text view).
+- Applies to heading, paragraph, bullet/numbered list, callout, and quote blocks; renders in PDF export too. Checkbox/toggle/code blocks stay plain text.
+
 ## In progress / next up
 
 - **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).

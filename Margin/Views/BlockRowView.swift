@@ -49,15 +49,11 @@ struct BlockRowView: View {
     private var content: some View {
         switch block.type {
         case .heading:
-            TextField("Heading", text: $block.textContent, axis: .vertical)
-                .font(.title2.bold())
-                .focused(focus, equals: block.id)
+            FormattableText(block: block, placeholder: "Heading", font: .title2.bold(), focus: focus)
                 .padding(.vertical, 4)
 
         case .paragraph:
-            TextField("Type “/” for blocks…", text: $block.textContent, axis: .vertical)
-                .font(.body)
-                .focused(focus, equals: block.id)
+            FormattableText(block: block, placeholder: "Type “/” for blocks…", font: .body, focus: focus)
                 .padding(.vertical, 4)
 
         case .bulletList:
@@ -65,9 +61,7 @@ struct BlockRowView: View {
                 Text("•")
                     .font(.body)
                     .foregroundStyle(.secondary)
-                TextField("List item", text: $block.textContent, axis: .vertical)
-                    .font(.body)
-                    .focused(focus, equals: block.id)
+                FormattableText(block: block, placeholder: "List item", font: .body, focus: focus)
             }
             .padding(.vertical, 4)
 
@@ -77,9 +71,7 @@ struct BlockRowView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .frame(minWidth: 18, alignment: .trailing)
-                TextField("List item", text: $block.textContent, axis: .vertical)
-                    .font(.body)
-                    .focused(focus, equals: block.id)
+                FormattableText(block: block, placeholder: "List item", font: .body, focus: focus)
             }
             .padding(.vertical, 4)
 
@@ -111,9 +103,7 @@ struct BlockRowView: View {
             HStack(alignment: .top, spacing: 10) {
                 Text("💡")
                     .font(.body)
-                TextField("Callout", text: $block.textContent, axis: .vertical)
-                    .font(.body)
-                    .focused(focus, equals: block.id)
+                FormattableText(block: block, placeholder: "Callout", font: .body, focus: focus)
             }
             .padding(12)
             .background(.yellow.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
@@ -123,10 +113,7 @@ struct BlockRowView: View {
                 Rectangle()
                     .fill(.secondary)
                     .frame(width: 3)
-                TextField("Quote", text: $block.textContent, axis: .vertical)
-                    .font(.body)
-                    .italic()
-                    .focused(focus, equals: block.id)
+                FormattableText(block: block, placeholder: "Quote", font: .body.italic(), focus: focus)
             }
             .padding(.vertical, 4)
 
@@ -176,6 +163,29 @@ struct BlockRowView: View {
         case .table:
             TableBlockView(block: block)
                 .padding(.vertical, 6)
+        }
+    }
+}
+
+/// A text field that renders **bold**/*italic*/etc. markers as real styling once the
+/// block isn't focused, and drops back to raw-marker plain text while editing (SwiftUI
+/// has no native live-formatting text editor, so this is the source/rendered toggle).
+private struct FormattableText: View {
+    @Bindable var block: Block
+    var placeholder: String
+    var font: Font
+    var focus: FocusState<UUID?>.Binding
+
+    var body: some View {
+        if focus.wrappedValue == block.id || !RichText.hasFormatting(block.textContent) {
+            TextField(placeholder, text: $block.textContent, axis: .vertical)
+                .font(font)
+                .focused(focus, equals: block.id)
+        } else {
+            Text(RichText.attributedString(from: block.textContent, baseFont: font))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { focus.wrappedValue = block.id }
         }
     }
 }
