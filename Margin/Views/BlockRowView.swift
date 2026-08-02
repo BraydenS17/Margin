@@ -13,6 +13,8 @@ struct BlockRowView: View {
     var onSplit: (String, String) -> Void = { _, _ in }
     var onOpenPage: ((Page) -> Void)? = nil
 
+    @State private var showingFlashcardSheet = false
+
     private static let maxIndent = 4
     private static let indentStep: CGFloat = 24
 
@@ -35,6 +37,11 @@ struct BlockRowView: View {
                     }
                 }
                 Button("Duplicate", systemImage: "plus.square.on.square", action: onDuplicate)
+                if block.type.isTextual && !block.textContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Button("Make Flashcard", systemImage: "rectangle.stack.badge.plus") {
+                        showingFlashcardSheet = true
+                    }
+                }
                 if block.indentLevel < Self.maxIndent {
                     Button("Indent", systemImage: "increase.indent") { block.indentLevel += 1 }
                 }
@@ -42,6 +49,9 @@ struct BlockRowView: View {
                     Button("Outdent", systemImage: "decrease.indent") { block.indentLevel -= 1 }
                 }
                 Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
+            }
+            .sheet(isPresented: $showingFlashcardSheet) {
+                MakeFlashcardSheet(frontText: RichText.plainText(from: block.textContent))
             }
     }
 
@@ -453,5 +463,90 @@ private struct PageLinkPicker: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+/// Turns a block's text into a flashcard: front is prefilled from the block, back is
+/// left for the student to fill in, and the card lands in an existing or brand-new deck.
+private struct MakeFlashcardSheet: View {
+    let frontText: String
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Deck.updatedAt, order: .reverse) private var decks: [Deck]
+
+    @State private var front: String
+    @State private var back = ""
+    @State private var selectedDeck: Deck?
+    @State private var newDeckTitle = ""
+
+    init(frontText: String) {
+        self.frontText = frontText
+        _front = State(initialValue: frontText)
+    }
+
+    private var canSave: Bool {
+        let hasFront = !front.trimmingCharacters(in: .whitespaces).isEmpty
+        let hasDestination = selectedDeck != nil || !newDeckTitle.trimmingCharacters(in: .whitespaces).isEmpty
+        return hasFront && hasDestination
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Card") {
+                    TextField("Front", text: $front, axis: .vertical)
+                    TextField("Back", text: $back, axis: .vertical)
+                }
+                Section("Deck") {
+                    if decks.isEmpty {
+                        TextField("New deck name", text: $newDeckTitle)
+                    } else {
+                        Picker("Deck", selection: $selectedDeck) {
+                            Text("New deck…").tag(Optional<Deck>.none)
+                            ForEach(decks) { deck in
+                                Text(deck.title).tag(Optional(deck))
+                            }
+                        }
+                        if selectedDeck == nil {
+                            TextField("New deck name", text: $newDeckTitle)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Make Flashcard")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: save).disabled(!canSave)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func save() {
+        let deck: Deck
+        if let selectedDeck {
+            deck = selectedDeck
+        } else {
+            let created = Deck(title: newDeckTitle.trimmingCharacters(in: .whitespaces))
+            modelContext.insert(created)
+            deck = created
+        }
+        let card = Flashcard(
+            front: front.trimmingCharacters(in: .whitespaces),
+            back: back.trimmingCharacters(in: .whitespaces),
+            sortIndex: deck.cards?.count ?? 0,
+            deck: deck
+        )
+        modelContext.insert(card)
+        deck.updatedAt = Date()
+        dismiss()
     }
 }

@@ -52,6 +52,12 @@ enum RichText {
         return result
     }
 
+    /// The text a reader would actually see, with every marker/mention token stripped —
+    /// used anywhere raw markup would look wrong (flashcard fronts, share text).
+    static func plainText(from text: String) -> String {
+        spans(from: text).map(\.text).joined()
+    }
+
     /// Whether the text has any recognizable marker at all — used to decide between
     /// showing an editable `TextField` (raw markers) and a rendered `Text` (styled).
     static func hasFormatting(_ text: String) -> Bool {

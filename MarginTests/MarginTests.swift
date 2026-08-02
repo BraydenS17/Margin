@@ -975,4 +975,40 @@ struct MarginTests {
         #expect(spans.count == 1)
         #expect(spans[0].isMention == true)
     }
+
+    @Test func plainTextStripsStyleMarkersAndKeepsMentionTitles() {
+        let id = UUID()
+        let token = RichText.pageMentionToken(title: "Chem 101", id: id)
+        let text = "See **bold** and \(token) notes"
+        #expect(RichText.plainText(from: text) == "See bold and @Chem 101 notes")
+    }
+
+    // MARK: - Flashcards
+
+    @Test func flashcardDefaultsAndRoundTripThroughDeck() throws {
+        let context = try makeContext()
+        let deck = Deck(title: "Chem")
+        context.insert(deck)
+
+        let card = Flashcard(front: "H2O", back: "Water", sortIndex: 0, deck: deck)
+        context.insert(card)
+        try context.save()
+
+        #expect(card.deck === deck)
+        #expect(deck.cards?.contains(where: { $0 === card }) == true)
+    }
+
+    @Test func deletingDeckCascadesToCards() throws {
+        let context = try makeContext()
+        let deck = Deck(title: "Chem")
+        context.insert(deck)
+        let card = Flashcard(front: "H2O", back: "Water", deck: deck)
+        context.insert(card)
+        try context.save()
+        #expect(try context.fetch(FetchDescriptor<Flashcard>()).count == 1)
+
+        context.delete(deck)
+        try context.save()
+        #expect(try context.fetch(FetchDescriptor<Flashcard>()).isEmpty)
+    }
 }
