@@ -12,6 +12,7 @@ struct BlockListView: View {
     @Bindable var page: Page
     var onOpenPage: ((Page) -> Void)? = nil
     var audioController: PageAudioController? = nil
+    var isEditing: Bool = true
 
     @Environment(\.modelContext) private var modelContext
     @State private var rowHeights: [UUID: CGFloat] = [:]
@@ -34,7 +35,7 @@ struct BlockListView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if blocks.isEmpty {
+            if blocks.isEmpty && isEditing {
                 Button {
                     let block = Block(type: .paragraph, sortIndex: 0, page: page)
                     block.audioTimestamp = audioController?.currentTimestamp

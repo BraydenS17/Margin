@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if os(iOS)
+import UIKit
+#endif
 
 struct PageDetailView: View {
     @Bindable var page: Page
@@ -136,6 +139,7 @@ struct PageDetailView: View {
             ForEach(PageMode.allCases) { m in
                 Button {
                     mode = m
+                    if m == .draw { dismissKeyboard() }
                 } label: {
                     Text(m.rawValue)
                         .font(.system(size: 14, weight: .bold))
@@ -165,6 +169,8 @@ struct PageDetailView: View {
     private var pageContent: some View {
             pageBackground
                 .frame(minHeight: 1000)
+                .contentShape(Rectangle())
+                .onTapGesture { dismissKeyboard() }
                 .overlay(alignment: .top) {
                     // Imported PDF pages are annotation-first: the document itself is the
                     // content layer, so no typed title/blocks are drawn over it.
@@ -210,7 +216,7 @@ struct PageDetailView: View {
                             .padding(.horizontal, 22)
                             .padding(.top, 20)
                             if page.kind == .document {
-                                BlockListView(page: page, onOpenPage: onOpenPage, audioController: audioController)
+                                BlockListView(page: page, onOpenPage: onOpenPage, audioController: audioController, isEditing: mode == .edit)
                             }
                             BacklinksView(page: page, onOpenPage: onOpenPage)
                         }
@@ -357,10 +363,19 @@ struct PageDetailView: View {
         columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
     }
 
+    /// Tapping anywhere outside the focused text field — blank page, background, mode
+    /// switch — ends typing the same way tapping away does in Notes/Notion.
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+    }
+
     private func handlePencilGesture(_ action: PencilGestureAction) {
         // A Pencil gesture while typing means "I want to draw" — switch modes first.
         guard mode == .draw else {
             mode = .draw
+            dismissKeyboard()
             return
         }
         switch action {
