@@ -119,11 +119,21 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - `PageAudioController` wraps `AVAudioRecorder`/`AVAudioPlayer`; iOS-only (stubbed no-op on other platforms, matching the PencilKit pattern elsewhere). Requires `NSMicrophoneUsageDescription` (added to the Xcode build settings' generated Info.plist).
 - **Needs on-device verification** — the record→stop→playback round trip couldn't be driven interactively in Simulator (no scripted-tap capability); only the static UI state and the underlying model round-trips were verified this session.
 
-## In progress / next up
+### Onboarding + TestFlight readiness (`feature/testflight-readiness`)
+- First-run welcome tour (`OnboardingView`, 4 panels), gated by a persisted flag, replayable from Settings.
+- First launch seeds a "Getting Started" notebook (`StarterContent`): a walkthrough page and a blank scratch canvas, so a fresh install has real content instead of an empty library.
+- Settings gained an About section: app version/build string, mailto beta-feedback link.
+- `PrivacyInfo.xcprivacy` added (declares UserDefaults + file-timestamp required-reason API usage). `ITSAppUsesNonExemptEncryption = NO` set so TestFlight builds skip the export-compliance prompt.
 
-- **On-device check of Pencil auto-detection** (Simulator can't produce real Pencil touches).
-- **On-device check of lecture-audio record/playback** (Simulator has no scripted-tap capability to drive the record→stop→playback flow interactively).
-- Slash menu / return-key feel on a physical keyboard, and Pencil features (see deferred device checks).
+## In progress / next up — TestFlight checklist
+
+Code-side readiness is essentially done. What's left is mostly outside this repo:
+
+- **App Store Connect record**: create the app listing (bundle ID `com.braydensally.Margin` already reserved via the project), fill in beta app description, screenshots (iPad required), and beta review "what to test" notes.
+- **On-device verification pass** (Simulator can't do these): Pencil auto-detection, lecture-audio record/playback round trip, PDF-import ink alignment/gesture ownership, and the tap-away-to-dismiss-keyboard / draw-mode UI change from the previous session. Do this on a real iPad + Apple Pencil before the first TestFlight build.
+- **App icon**: current icon is a placeholder wordmark ("M."). Fine for internal/beta testing; consider a real icon before wider distribution.
+- **Archive + upload**: `xcodebuild archive` + upload via Xcode Organizer or `xcodebuild -exportArchive`/Transporter — untested from this environment since it requires a signed archive against a real provisioning profile.
+- Slash menu / return-key feel on a physical keyboard (needs real keyboard, not Simulator).
 
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)
 
