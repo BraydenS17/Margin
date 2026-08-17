@@ -9,6 +9,7 @@ struct RootView: View {
     @State private var selectedPage: Page?
     @State private var isInLibrary = true
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showOnboarding = !ThemeSettings.shared.hasCompletedOnboarding
     #if DEBUG
     @State private var showPDFInkSpike = false
     #endif
@@ -30,6 +31,17 @@ struct RootView: View {
         .tint(Theme.accent)
         .preferredColorScheme(ThemeSettings.shared.appearance.colorScheme)
         .onAppear(perform: ensureWorkspaceExists)
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView {
+                ThemeSettings.shared.hasCompletedOnboarding = true
+                showOnboarding = false
+            }
+            .interactiveDismissDisabled()
+        }
+        // Settings' "Replay Welcome Tour" clears the flag while this view is on screen.
+        .onChange(of: ThemeSettings.shared.hasCompletedOnboarding) { _, completed in
+            if !completed { showOnboarding = true }
+        }
         #if DEBUG
         .sheet(isPresented: $showPDFInkSpike) {
             NavigationStack { PDFInkSpikeView() }
@@ -99,7 +111,10 @@ struct RootView: View {
 
     private func ensureWorkspaceExists() {
         guard workspaces.isEmpty else { return }
-        modelContext.insert(Workspace())
+        let workspace = Workspace()
+        modelContext.insert(workspace)
+        // First launch ever — give the tester something real to open and scribble on.
+        StarterContent.seed(into: workspace, context: modelContext)
     }
 }
 

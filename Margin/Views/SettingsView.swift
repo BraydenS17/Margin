@@ -67,6 +67,37 @@ struct SettingsView: View {
                         toggleRow("Jump Back In", isOn: $settings.showRecents)
                         toggleRow("Favorites", isOn: $settings.showFavorites)
                     }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("About").metaLabel()
+
+                        Text("Margin \(Self.versionString)")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text("Your notes are stored on this device. No account, no tracking.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.muted)
+
+                        if let feedbackURL = Self.feedbackURL {
+                            Link(destination: feedbackURL) {
+                                Label("Send Beta Feedback", systemImage: "envelope")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            .padding(.top, 2)
+                        }
+
+                        Button {
+                            settings.hasCompletedOnboarding = false
+                            dismiss()
+                        } label: {
+                            Label("Replay Welcome Tour", systemImage: "sparkles")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 2)
+                    }
                 }
                 .padding(24)
             }
@@ -78,6 +109,18 @@ struct SettingsView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private static var versionString: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(version) (\(build))"
+    }
+
+    private static var feedbackURL: URL? {
+        let subject = "Margin Beta Feedback \(versionString)"
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        return URL(string: "mailto:braydensally@gmail.com?subject=\(subject)")
     }
 
     private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
