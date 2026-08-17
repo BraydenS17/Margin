@@ -44,6 +44,9 @@ final class ThemeSettings {
     var showFavorites: Bool {
         didSet { defaults.set(showFavorites, forKey: "settings.showFavorites") }
     }
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: "settings.hasCompletedOnboarding") }
+    }
 
     private let defaults: UserDefaults
 
@@ -54,5 +57,6 @@ final class ThemeSettings {
         self.showDueSoon = defaults.object(forKey: "settings.showDueSoon") as? Bool ?? true
         self.showRecents = defaults.object(forKey: "settings.showRecents") as? Bool ?? true
         self.showFavorites = defaults.object(forKey: "settings.showFavorites") as? Bool ?? true
+        self.hasCompletedOnboarding = defaults.object(forKey: "settings.hasCompletedOnboarding") as? Bool ?? false
     }
 }

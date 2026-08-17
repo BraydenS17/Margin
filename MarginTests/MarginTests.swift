@@ -1136,4 +1136,32 @@ struct MarginTests {
         let fetched = try context.fetch(FetchDescriptor<Block>()).first
         #expect(fetched?.audioTimestamp == 12.5)
     }
+
+    // MARK: - Starter content
+
+    @Test func starterContentSeedsGettingStartedNotebook() throws {
+        let context = try makeContext()
+        let workspace = Workspace()
+        context.insert(workspace)
+
+        StarterContent.seed(into: workspace, context: context)
+        try context.save()
+
+        let notebooks = try context.fetch(FetchDescriptor<Notebook>())
+        #expect(notebooks.count == 1)
+        let notebook = try #require(notebooks.first)
+        #expect(notebook.title == StarterContent.notebookTitle)
+        #expect(notebook.workspace?.id == workspace.id)
+
+        let pages = (notebook.pages ?? []).sorted { $0.sortIndex < $1.sortIndex }
+        #expect(pages.count == 2)
+        #expect(pages.first?.kind == .document)
+        #expect(pages.last?.kind == .canvas)
+
+        // The guide page has real content, ordered and typed as authored.
+        let guideBlocks = (pages.first?.blocks ?? []).sorted { $0.sortIndex < $1.sortIndex }
+        #expect(!guideBlocks.isEmpty)
+        #expect(guideBlocks.first?.type == .heading)
+        #expect(guideBlocks.contains { $0.type == .checkbox && !$0.isChecked })
+    }
 }
