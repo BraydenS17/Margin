@@ -20,13 +20,16 @@ Major-specific feature packs (e.g. circuit-design tools for EE students, dosage-
 
 ```
 Margin/
-  App/          entry point + ModelContainer setup
-  Models/       SwiftData entities (Workspace, Notebook, Page, Block, PDFAsset)
-  Views/        navigation shell, block editor, ink canvas
-  Templates/    page templates (Day Planner, Course Landing Page, ...)
-  Spike/        throwaway prototypes, not part of the shipped app
-MarginTests/    unit tests (Swift Testing)
-MarginUITests/  UI tests (XCTest)
+  App/           entry point + ModelContainer setup
+  Models/        SwiftData entities (Workspace, Notebook, Page, Block, PDFAsset, Tag,
+                 Deck, ...) plus non-UI helpers (RichText, MathExpression, audio)
+  Views/         navigation shell, block editor, ink canvas, library, settings
+  DesignSystem/  theme (Modern Editorial), shared UI modifiers
+  Export/        PDF export + PDF import pipelines
+  Templates/     page templates (Day Planner, Course Landing Page, ...) + starter content
+  Spike/         throwaway prototypes, not part of the shipped app
+MarginTests/     unit tests (Swift Testing)
+MarginUITests/   UI tests (XCTest)
 ```
 
 ## Building
