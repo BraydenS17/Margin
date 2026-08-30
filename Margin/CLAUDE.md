@@ -2,7 +2,7 @@
 
 A unified notes workspace for iPad: **Notion-style structured docs + GoodNotes/Notability-style handwritten ink, in one app.** The defining feature is that typed structured content and freehand Apple Pencil ink live on the *same page* — plus PDF import + annotation and nested notebook organization. Deliberately **not** AI-based.
 
-Full plan: `~/.claude/plans/can-you-come-up-precious-dongarra.md`
+Build status lives in [`../ROADMAP.md`](../ROADMAP.md) — keep it updated as features land; this file is the stable product/architecture spec.
 
 ## Product
 
@@ -38,19 +38,25 @@ Data model: `Workspace → Notebook (nestable) → Page → Block`, plus `PDFAss
 5. **M5 — Organization & polish:** nested notebooks, reorder/move, search, thumbnails, export/share, onboarding.
 6. **M6 — Beta & monetize:** TestFlight, StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync.
 
-## Biggest technical risk
+## Biggest technical risk (resolved)
 
-**Ink over a zoomed PDF page.** `PKCanvasView` doesn't zoom with `PDFView`'s scroll view — strokes can go blurry/misaligned at zoom, and touches can get swallowed as PDF scroll gestures instead of reaching the canvas. Mitigate via PDFKit's per-page overlay provider, driving canvas scale from PDF zoom, and disabling `usePageViewController`. **Spike this before investing in M3/M4** — a throwaway prototype proving ink stays crisp and aligned at zoom.
+**Ink over a zoomed PDF page** was the original risk: `PKCanvasView` doesn't zoom with `PDFView`'s scroll view, and touches can get swallowed by PDF scroll gestures. A spike (`Spike/PDFInkSpikeView.swift`, kept as reference) explored the `PDFPageOverlayViewProvider` route; the shipped M4 design sidesteps it entirely — imported PDF pages render as a static rasterized background, so the ink layer model is identical to every other page. Trade-off: no pinch-zoom on PDF pages in v1.
 
 ## Current status
 
-- Xcode project created (SwiftUI, SwiftData storage, no CloudKit yet, own git repo at this path).
-- **Not yet re-added:** the SwiftData model (`Workspace`/`Notebook`/`Page`/`Block`/`PDFAsset`) and the navigation shell were scaffolded once but got overwritten by Xcode's project creation — only the default `MarginApp.swift`/`ContentView.swift` exist right now. Next step is re-adding the model + shell, then doing the ink-over-PDF spike before M2.
+M1–M4 are done, plus most of M5 and substantial unplanned features (page templates, page database with tags/status/table/board views, canvas pages with text boxes, rich text + math markers, @-mentions, flashcards, function grapher, lecture-audio sync, onboarding). Code-side TestFlight readiness is done; what remains is mostly outside the repo (App Store Connect record, on-device verification, signed archive). See [`../ROADMAP.md`](../ROADMAP.md) for the full feature-by-feature status and the TestFlight checklist.
 
-## File layout (once re-scaffolded)
+## File layout
 
 ```
-Margin/Margin/          # app target source
-  App/                  # entry point + ModelContainer setup
-  Models/                # SwiftData entities
-  Views/                 # navigation shell, editor, ink, PDF views (as they land)
+Margin/Margin/           # app target source
+  App/                   # entry point + ModelContainer setup
+  Models/                # SwiftData entities + non-UI helpers (RichText, MathExpression, audio)
+  Views/                 # navigation shell, block editor, ink canvas, library, settings
+  DesignSystem/          # Modern Editorial theme, shared UI modifiers
+  Export/                # PDF export + import pipelines
+  Templates/             # page templates + first-run starter content
+  Spike/                 # throwaway prototypes (debug-only, not shipped)
+Margin/MarginTests/      # unit tests (Swift Testing)
+Margin/MarginUITests/    # UI tests (XCTest)
+```

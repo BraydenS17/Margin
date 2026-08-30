@@ -137,8 +137,7 @@ Code-side readiness is essentially done. What's left is mostly outside this repo
 
 ## Not yet planned (per CLAUDE.md, deliberately out of v1 scope)
 
-- **M5 — remaining polish**: onboarding, pinch-zoom for PDF pages.
-- **M6 — Beta & monetize**: TestFlight, StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync.
-- **Real Notion-style databases**: custom properties (date/select/checkbox/text) on a live collection, with table/calendar/board views over that data — distinct from the static block-based templates shipped above. Explicitly scoped as a stretch goal, not required for v1; would be its own milestone if pursued.
-- **Image blocks**: currently a placeholder in the block editor, no picker/storage implemented.
+- **M5 — remaining polish**: pinch-zoom for PDF pages (onboarding shipped with `feature/testflight-readiness` above).
+- **M6 — monetize**: StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync. (The TestFlight half of M6 is in the checklist above.)
+- **User-defined database properties**: custom property *types* (date/select/checkbox/text) and calendar views — the parts of "real Notion databases" that the shipped page database (tags, status, table/board views) doesn't cover. Stretch goal, not required for v1.
 - **Cross-device sync**: architected for via CloudKit-compatible schema, but not enabled — deferred past v1 per plan.
