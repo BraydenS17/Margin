@@ -49,6 +49,24 @@ extension View {
             .foregroundStyle(Theme.muted)
     }
 
+    /// Background for chrome that floats over page content (ink toolbar, markup button).
+    ///
+    /// Default: the flat editorial surface + hairline border. When the user opts into
+    /// Liquid Glass in Settings (and the OS supports it), the same shape renders as the
+    /// system glass material instead — the layout, size, and controls don't change.
+    /// Reading ThemeSettings here registers Observation tracking, so flipping the
+    /// setting restyles live.
+    @ViewBuilder
+    func floatingChrome<S: InsettableShape>(in shape: S) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *), ThemeSettings.shared.liquidGlass {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self
+                .background(Theme.surface, in: shape)
+                .overlay(shape.strokeBorder(Theme.border, lineWidth: 1))
+        }
+    }
+
     /// Bordered editorial surface used for cards.
     func editorialCard(padding: CGFloat = 16) -> some View {
         self

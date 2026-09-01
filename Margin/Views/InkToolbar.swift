@@ -40,8 +40,7 @@ struct InkToolbar: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(Theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+            .floatingChrome(in: Capsule())
             .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
         }
     }
@@ -58,8 +57,7 @@ struct InkToolbar: View {
         .foregroundStyle(pencilDetected ? Theme.accent : Theme.muted)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background(Theme.surface, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+        .floatingChrome(in: Capsule())
     }
 
     /// Taps cycle Auto → Finger+Pencil → Pencil Only → Auto. A plain cycling button (rather

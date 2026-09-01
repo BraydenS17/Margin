@@ -83,6 +83,10 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - **Pencil-to-paper auto-entry**: touching the page with an Apple Pencil activates markup automatically (a non-consuming pencil-only recognizer on the page's scroll container); the activating touch itself doesn't ink — strokes land from the next touch on. Finger input keeps typing/scrolling as before.
 - Under the hood the deterministic layer gating is unchanged (hit-testing swaps between block layer and ink canvas); only the visible mode UI was replaced.
 
+### Liquid Glass setting (`feature/liquid-glass-setting`)
+- Opt-in **Liquid Glass** toggle in Settings → Appearance (iOS 26+ only; hidden on older systems), off by default.
+- When on, only the floating drawing chrome — ink toolbar, its status pill, and the inactive markup button — renders as the system glass material via a shared `floatingChrome(in:)` helper; layout, controls, and the flat editorial look everywhere else are unchanged.
+
 ### Image blocks (`feature/image-blocks`)
 - The block editor's last placeholder is real: image blocks hold a photo picked from the library (PhotosPicker), rendered inline; empty ones show a dashed "Add a photo" target.
 - Long-press to replace or remove; oversized photos are downscaled/re-encoded (~1600pt JPEG) before hitting the store (`.externalStorage`, CloudKit-safe optional).

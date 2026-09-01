@@ -137,16 +137,28 @@ struct PageDetailView: View {
         Button {
             setDrawing(!isDrawing)
         } label: {
-            Image(systemName: "pencil.tip.crop.circle")
-                .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(isDrawing ? Color.white : Theme.text)
-                .frame(width: 44, height: 44)
-                .background(isDrawing ? Theme.accent : Theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(isDrawing ? Theme.accent : Theme.border, lineWidth: 1))
+            Group {
+                if isDrawing {
+                    markupGlyph
+                        .foregroundStyle(Color.white)
+                        .background(Theme.accent, in: Circle())
+                        .overlay(Circle().strokeBorder(Theme.accent, lineWidth: 1))
+                } else {
+                    markupGlyph
+                        .foregroundStyle(Theme.text)
+                        .floatingChrome(in: Circle())
+                }
+            }
         }
         .buttonStyle(.plain)
         .keyboardShortcut("d", modifiers: .command)
         .accessibilityLabel(isDrawing ? "Finish Markup" : "Markup")
+    }
+
+    private var markupGlyph: some View {
+        Image(systemName: "pencil.tip.crop.circle")
+            .font(.system(size: 19, weight: .semibold))
+            .frame(width: 44, height: 44)
     }
 
     private func setDrawing(_ drawing: Bool) {

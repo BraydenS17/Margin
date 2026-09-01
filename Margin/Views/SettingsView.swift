@@ -58,6 +58,15 @@ struct SettingsView: View {
                         .padding(3)
                         .background(Theme.surface, in: Capsule())
                         .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+
+                        // Liquid Glass only exists on iOS 26+; older systems keep the
+                        // flat look and never see the toggle.
+                        if #available(iOS 26.0, macOS 26.0, *) {
+                            toggleRow("Liquid Glass", isOn: $settings.liquidGlass)
+                            Text("Frosted glass drawing tools that float over the page. Everything else keeps the flat look.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.muted)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
