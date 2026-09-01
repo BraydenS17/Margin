@@ -25,7 +25,7 @@ Every `Page` is two composited layers:
 1. **Content layer** — ordered `Block`s (typed, structured; the "Notion" half)
 2. **Ink layer** — a full-page `PKCanvasView` overlay (freehand; the "GoodNotes" half)
 
-A page's **background** is blank/ruled/grid *or* an imported **PDF page**. PDF annotation is just "a page whose background is a PDF page and whose primary interaction is ink" — this unifies all three MVP pillars under one `Page` model. A per-page mode toggle switches Pencil input between "edit blocks" and "draw ink" to avoid gesture conflicts (no heuristics in v1).
+A page's **background** is blank/ruled/grid *or* an imported **PDF page**. PDF annotation is just "a page whose background is a PDF page and whose primary interaction is ink" — this unifies all three MVP pillars under one `Page` model. Input follows Apple Notes: the page is always typeable, and drawing is a markup state entered via a single pencil-tip toggle or automatically when an Apple Pencil touches the page (a non-consuming pencil-only gesture observer); the two layers still swap hit-testing so the gesture conflicts stay resolved deterministically.
 
 Data model: `Workspace → Notebook (nestable) → Page → Block`, plus `PDFAsset` (imported file + per-page mapping to `Page`s).
 
@@ -33,7 +33,7 @@ Data model: `Workspace → Notebook (nestable) → Page → Block`, plus `PDFAss
 
 1. **M1 — Foundations:** SwiftData model, workspace/notebook/page navigation shell (`NavigationSplitView`), blank-page rendering.
 2. **M2 — Ink engine:** PencilKit overlay on a blank page, tools (pen/highlighter/eraser, color, width), undo/redo, persist `PKDrawing`.
-3. **M3 — Block editor:** typed block model + native rich text per block, add/reorder/delete, two-layer composited page + draw/edit toggle.
+3. **M3 — Block editor:** typed block model + native rich text per block, add/reorder/delete, two-layer composited page + markup (draw) state.
 4. **M4 — PDF:** import, per-page ink overlay (watch zoom/pixelation + gesture-conflict pitfalls), annotated-PDF export.
 5. **M5 — Organization & polish:** nested notebooks, reorder/move, search, thumbnails, export/share, onboarding.
 6. **M6 — Beta & monetize:** TestFlight, StoreKit subscription + free-tier limits, App Store submission, then CloudKit sync.

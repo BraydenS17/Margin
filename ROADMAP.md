@@ -12,7 +12,7 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 ### M2 — Ink engine
 - PencilKit overlay (`PKCanvasView`) on the page, with the system `PKToolPicker` (pen/highlighter/eraser, color, width).
 - Undo/redo, debounced persistence of `PKDrawing` to `Page.inkData`.
-- Per-page **Edit / Draw** mode toggle gates the block layer vs. the ink layer (the two-layer "typed + ink on one page" architecture).
+- Per-page **Edit / Draw** mode toggle gates the block layer vs. the ink layer (the two-layer "typed + ink on one page" architecture). *Superseded by the Apple Notes-style markup flow below — the gating survives, the visible tabs don't.*
 
 ### M3 — Block editor (built ahead of schedule)
 - All 10 block types render and edit inline: heading, paragraph, bullet/numbered list, checkbox, divider, callout, quote, image (placeholder), and **table** (JSON-backed editable grid).
@@ -24,7 +24,7 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Deliberately *not* a real Notion-style database (no custom properties, no calendar/board views over live data) — see "Not yet planned" below.
 
 ### Undo/redo
-- Toolbar Undo/Redo buttons, mode-aware: routes to SwiftData's `ModelContext.undoManager` in Edit mode, and the ink canvas's own `UndoManager` in Draw mode.
+- Toolbar Undo/Redo buttons, mode-aware: routes to SwiftData's `ModelContext.undoManager` while typing, and the ink canvas's own `UndoManager` while marking up.
 
 ### PDF-over-ink zoom spike (risk de-risking ahead of M4)
 - Throwaway prototype (`Margin/Spike/PDFInkSpikeView.swift`, debug-only) proving out `PDFPageOverlayViewProvider` + per-page `PKCanvasView` overlay.
@@ -69,13 +69,19 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 
 ### Handwritten pages (`feature/handwritten-pages`)
 - **Page kinds**: every page is a `document` (block editor) or a `canvas` (dedicated drawing surface — no block editor, no default text edit at all).
-- **Handwritten template** in the New Page picker; canvas pages open in Draw mode, and flipping past the last page continues the same kind.
+- **Handwritten template** in the New Page picker; canvas pages open with markup active, and flipping past the last page continues the same kind.
 - **Text boxes** on canvas pages: freely positioned, dragged by a grip handle (so dragging never fights text editing), width presets, context-menu delete, cascade-deleted with the page; rendered in PDF export/thumbnails at their stored positions.
 
 ### iPad touch ergonomics (`feature/ipad-ergonomics`)
-- All icon buttons, the mode toggle, and ink-toolbar controls brought up to the 44pt minimum touch target (small visuals keep 44pt hit frames where a big glyph would look heavy).
+- All icon buttons, the markup toggle, and ink-toolbar controls brought up to the 44pt minimum touch target (small visuals keep 44pt hit frames where a big glyph would look heavy).
 - Page rows gained swipe actions (favorite / rename / delete) so no essential action is long-press-only; list rows and property chips loosened for finger use.
 - Text-box grip bar enlarged for fingertip dragging.
+
+### Apple Notes-style unified editing (`feature/apple-notes-editing`)
+- The visible **Edit / Draw tabs are gone**: a page is always typeable, like Apple Notes.
+- Drawing is a **markup state**: one pencil-tip toggle in the top bar (⌘D) enters/exits it; the ink toolbar appears at the bottom while active.
+- **Pencil-to-paper auto-entry**: touching the page with an Apple Pencil activates markup automatically (a non-consuming pencil-only recognizer on the page's scroll container); the activating touch itself doesn't ink — strokes land from the next touch on. Finger input keeps typing/scrolling as before.
+- Under the hood the deterministic layer gating is unchanged (hit-testing swaps between block layer and ink canvas); only the visible mode UI was replaced.
 
 ### Image blocks (`feature/image-blocks`)
 - The block editor's last placeholder is real: image blocks hold a photo picked from the library (PhotosPicker), rendered inline; empty ones show a dashed "Add a photo" target.
