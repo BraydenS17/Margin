@@ -148,7 +148,7 @@ struct LibraryView: View {
         ) {
             Button("Delete Notebook", role: .destructive) {
                 if let notebook = notebookPendingDelete {
-                    modelContext.delete(notebook)
+                    deleteCascading(notebook)
                 }
                 notebookPendingDelete = nil
             }
@@ -350,7 +350,7 @@ struct LibraryView: View {
                 }
             }
             Button("Delete", systemImage: "trash", role: .destructive) {
-                modelContext.delete(deck)
+                deleteCascading(deck)
             }
         }
     }
@@ -598,6 +598,20 @@ struct LibraryView: View {
         let notebook = Notebook(workspace: workspace, sortIndex: notebooks.count)
         modelContext.insert(notebook)
         onOpen(notebook, nil)
+    }
+
+    /// Deletes a model whose relationships cascade deep (a notebook's nested sub-notebooks,
+    /// pages, blocks, and text boxes; a deck's flashcards). With the app's UndoManager
+    /// attached to the context, SwiftData registers an undo action for every object a
+    /// cascade touches — for a large notebook that's a lot of synchronous bookkeeping on
+    /// the main thread, and it's the prime suspect behind on-device crashes when deleting
+    /// notebooks/decks. Neither delete has an "Undo" affordance in the UI, so it's safe to
+    /// skip undo registration for just this one operation.
+    private func deleteCascading<T: PersistentModel>(_ model: T) {
+        modelContext.undoManager?.disableUndoRegistration()
+        modelContext.delete(model)
+        try? modelContext.save()
+        modelContext.undoManager?.enableUndoRegistration()
     }
 }
 
