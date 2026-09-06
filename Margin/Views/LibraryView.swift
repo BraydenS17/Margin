@@ -634,6 +634,10 @@ struct LibraryView: View {
         }
         for page in notebook.pages ?? [] {
             deletePageContents(page)
+            // Force the external-storage blob to fault in before deleting: SwiftData
+            // crashes ("Unexpected backing data for snapshot creation") if it tries to
+            // snapshot an .externalStorage attribute that's never been materialized.
+            _ = page.audioData
             modelContext.delete(page)
         }
     }
@@ -641,9 +645,11 @@ struct LibraryView: View {
     private func deletePageContents(_ page: Page) {
         for subpage in page.subpages ?? [] {
             deletePageContents(subpage)
+            _ = subpage.audioData
             modelContext.delete(subpage)
         }
         for block in page.blocks ?? [] {
+            _ = block.imageData
             modelContext.delete(block)
         }
         for box in page.textBoxes ?? [] {
