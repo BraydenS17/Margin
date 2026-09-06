@@ -135,7 +135,13 @@ Status against the milestone plan in [`Margin/CLAUDE.md`](Margin/CLAUDE.md). Mil
 - Settings gained an About section: app version/build string, mailto beta-feedback link.
 - `PrivacyInfo.xcprivacy` added (declares UserDefaults + file-timestamp required-reason API usage). `ITSAppUsesNonExemptEncryption = NO` set so TestFlight builds skip the export-compliance prompt.
 
-## In progress / next up — TestFlight checklist
+## In progress / next up
+
+### Continuous-scroll pages + swipe paging (`feature/continuous-scroll-pages`)
+
+GoodNotes/Notability-style page navigation: fixed-size (Letter) pages stacked in one continuous, pinch-zoomable scroll, auto-appending a blank page once you write on the current last one, plus a global preference to switch to swipe-between-single-pages instead. Full design in [`docs/plans/continuous-scroll-pages.md`](docs/plans/continuous-scroll-pages.md). A separate "whiteboard" (Freeform-style infinite 2D canvas) note type was discussed but is explicitly out of scope for this plan — still needs its own spec.
+
+## TestFlight checklist
 
 Code-side readiness is essentially done. What's left is mostly outside this repo:
 
