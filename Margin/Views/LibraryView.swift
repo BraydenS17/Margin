@@ -605,9 +605,17 @@ struct LibraryView: View {
     /// showed that automatic cascade trip a fatal assertion inside SwiftData itself while
     /// enumerating a deck's flashcards (not app code); deleting the leaves ourselves means
     /// there's nothing left for SwiftData's cascade walk to choke on.
+    ///
+    /// Children are pulled with an explicit `FetchDescriptor` rather than by reading
+    /// `deck.cards`/`notebook.children`/etc. directly: those relationship arrays can hand
+    /// back elements from an unresolved prefetch batch, and deleting one of those trips a
+    /// SwiftData assertion ("Unexpected backing data for snapshot creation") — a fetch
+    /// always returns fully-materialized instances.
     private func deleteDeck(_ deck: Deck) {
         modelContext.undoManager?.disableUndoRegistration()
-        for card in deck.cards ?? [] {
+        let deckID = deck.persistentModelID
+        let descriptor = FetchDescriptor<Flashcard>(predicate: #Predicate { $0.deck?.persistentModelID == deckID })
+        for card in (try? modelContext.fetch(descriptor)) ?? [] {
             modelContext.delete(card)
         }
         modelContext.delete(deck)
@@ -628,11 +636,18 @@ struct LibraryView: View {
     }
 
     private func deleteNotebookContents(_ notebook: Notebook) {
-        for child in notebook.children ?? [] {
+        let notebookID = notebook.persistentModelID
+        let childDescriptor = FetchDescriptor<Notebook>(predicate: #Predicate { $0.parent?.persistentModelID == notebookID })
+        for child in (try? modelContext.fetch(childDescriptor)) ?? [] {
             deleteNotebookContents(child)
             modelContext.delete(child)
         }
-        for page in notebook.pages ?? [] {
+        // `parentPage == nil` matters: a subpage's `notebook` is also set to its ancestor
+        // notebook (see BlockRowView.createSubpage), so an unfiltered fetch here would
+        // include subpages too — deleting each twice, once here and once via the recursive
+        // `deletePageContents` walk below.
+        let pageDescriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.notebook?.persistentModelID == notebookID && $0.parentPage == nil })
+        for page in (try? modelContext.fetch(pageDescriptor)) ?? [] {
             deletePageContents(page)
             // Force the external-storage blob to fault in before deleting: SwiftData
             // crashes ("Unexpected backing data for snapshot creation") if it tries to
@@ -643,16 +658,20 @@ struct LibraryView: View {
     }
 
     private func deletePageContents(_ page: Page) {
-        for subpage in page.subpages ?? [] {
+        let pageID = page.persistentModelID
+        let subpageDescriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.parentPage?.persistentModelID == pageID })
+        for subpage in (try? modelContext.fetch(subpageDescriptor)) ?? [] {
             deletePageContents(subpage)
             _ = subpage.audioData
             modelContext.delete(subpage)
         }
-        for block in page.blocks ?? [] {
+        let blockDescriptor = FetchDescriptor<Block>(predicate: #Predicate { $0.page?.persistentModelID == pageID })
+        for block in (try? modelContext.fetch(blockDescriptor)) ?? [] {
             _ = block.imageData
             modelContext.delete(block)
         }
-        for box in page.textBoxes ?? [] {
+        let textBoxDescriptor = FetchDescriptor<TextBox>(predicate: #Predicate { $0.page?.persistentModelID == pageID })
+        for box in (try? modelContext.fetch(textBoxDescriptor)) ?? [] {
             modelContext.delete(box)
         }
     }
