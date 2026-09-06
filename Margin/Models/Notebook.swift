@@ -15,10 +15,14 @@ final class Notebook {
     var workspace: Workspace?
     var parent: Notebook?
 
-    @Relationship(deleteRule: .cascade, inverse: \Notebook.parent)
+    // Notebook deletion walks and deletes children/pages manually (see
+    // LibraryView.deleteNotebookContents) to avoid a SwiftData assertion crash when its own
+    // cascade rule also fires on an already-deleted child; `.nullify` here keeps SwiftData
+    // from doing that second cascade pass.
+    @Relationship(deleteRule: .nullify, inverse: \Notebook.parent)
     var children: [Notebook]? = []
 
-    @Relationship(deleteRule: .cascade, inverse: \Page.notebook)
+    @Relationship(deleteRule: .nullify, inverse: \Page.notebook)
     var pages: [Page]? = []
 
     @Relationship(deleteRule: .nullify, inverse: \Assignment.course)
