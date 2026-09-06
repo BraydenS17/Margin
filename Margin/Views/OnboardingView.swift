@@ -24,9 +24,9 @@ struct OnboardingView: View {
         ),
         Panel(
             systemImage: "pencil.tip.crop.circle",
-            kicker: "Two modes",
-            title: "Edit blocks. Draw ink.",
-            message: "Flip the toggle at the top of any page: Edit mode for typing and arranging blocks, Draw mode for the Pencil. Undo follows whichever layer you're in."
+            kicker: "Just start writing",
+            title: "Tap to type. Touch Pencil to draw.",
+            message: "Tap anywhere to type, and touch the page with your Apple Pencil to start drawing — or tap the pencil button to mark up by hand. Tap it again when you're done."
         ),
         Panel(
             systemImage: "doc.richtext",

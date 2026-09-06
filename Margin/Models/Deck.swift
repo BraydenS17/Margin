@@ -13,7 +13,10 @@ final class Deck {
     // Stored as a raw String (not the enum) for CloudKit compatibility; use `color`.
     var colorRaw: String = NotebookColor.orange.rawValue
 
-    @Relationship(deleteRule: .cascade, inverse: \Flashcard.deck)
+    // Deck deletion walks and deletes cards manually (see LibraryView.deleteDeck) to avoid
+    // a SwiftData assertion crash when its own cascade rule also fires on an already-deleted
+    // card; `.nullify` here keeps SwiftData from doing that second cascade pass.
+    @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck)
     var cards: [Flashcard]? = []
 
     init(title: String = "Untitled Deck") {

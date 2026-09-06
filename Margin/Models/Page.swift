@@ -38,13 +38,17 @@ final class Page {
     // notebook grouping. Deleting a page deletes its subpages too.
     var parentPage: Page?
 
-    @Relationship(deleteRule: .cascade, inverse: \Page.parentPage)
+    // Page deletion walks and deletes subpages/blocks/text boxes manually (see
+    // LibraryView.deletePageContents) to avoid a SwiftData assertion crash when its own
+    // cascade rule also fires on an already-deleted child; `.nullify` here keeps SwiftData
+    // from doing that second cascade pass.
+    @Relationship(deleteRule: .nullify, inverse: \Page.parentPage)
     var subpages: [Page]? = []
 
-    @Relationship(deleteRule: .cascade, inverse: \Block.page)
+    @Relationship(deleteRule: .nullify, inverse: \Block.page)
     var blocks: [Block]? = []
 
-    @Relationship(deleteRule: .cascade, inverse: \TextBox.page)
+    @Relationship(deleteRule: .nullify, inverse: \TextBox.page)
     var textBoxes: [TextBox]? = []
 
     var pdfAsset: PDFAsset?

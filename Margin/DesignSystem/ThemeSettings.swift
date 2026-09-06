@@ -47,6 +47,11 @@ final class ThemeSettings {
     var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "settings.hasCompletedOnboarding") }
     }
+    /// Opt-in Liquid Glass material on the floating drawing chrome (iOS 26+ only).
+    /// Off by default — the flat editorial look stays untouched until the user flips it.
+    var liquidGlass: Bool {
+        didSet { defaults.set(liquidGlass, forKey: "settings.liquidGlass") }
+    }
 
     private let defaults: UserDefaults
 
@@ -58,5 +63,6 @@ final class ThemeSettings {
         self.showRecents = defaults.object(forKey: "settings.showRecents") as? Bool ?? true
         self.showFavorites = defaults.object(forKey: "settings.showFavorites") as? Bool ?? true
         self.hasCompletedOnboarding = defaults.object(forKey: "settings.hasCompletedOnboarding") as? Bool ?? false
+        self.liquidGlass = defaults.object(forKey: "settings.liquidGlass") as? Bool ?? false
     }
 }

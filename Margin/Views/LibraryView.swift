@@ -148,7 +148,7 @@ struct LibraryView: View {
         ) {
             Button("Delete Notebook", role: .destructive) {
                 if let notebook = notebookPendingDelete {
-                    modelContext.delete(notebook)
+                    deleteNotebook(notebook)
                 }
                 notebookPendingDelete = nil
             }
@@ -350,7 +350,7 @@ struct LibraryView: View {
                 }
             }
             Button("Delete", systemImage: "trash", role: .destructive) {
-                modelContext.delete(deck)
+                deleteDeck(deck)
             }
         }
     }
@@ -598,6 +598,57 @@ struct LibraryView: View {
         let notebook = Notebook(workspace: workspace, sortIndex: notebooks.count)
         modelContext.insert(notebook)
         onOpen(notebook, nil)
+    }
+
+    /// Deletes every card first, then the (now childless) deck — instead of leaning on
+    /// SwiftData's automatic `.cascade` delete rule for `Deck.cards`. A device crash log
+    /// showed that automatic cascade trip a fatal assertion inside SwiftData itself while
+    /// enumerating a deck's flashcards (not app code); deleting the leaves ourselves means
+    /// there's nothing left for SwiftData's cascade walk to choke on.
+    private func deleteDeck(_ deck: Deck) {
+        modelContext.undoManager?.disableUndoRegistration()
+        for card in deck.cards ?? [] {
+            modelContext.delete(card)
+        }
+        modelContext.delete(deck)
+        try? modelContext.save()
+        modelContext.undoManager?.enableUndoRegistration()
+    }
+
+    /// Same treatment as `deleteDeck`, recursively: sub-notebooks and pages are walked and
+    /// deleted leaf-first (blocks, text boxes, and subpages before their page; pages before
+    /// their notebook; child notebooks before their parent) rather than relying on
+    /// SwiftData's automatic cascade, which is the same machinery that crashed on decks.
+    private func deleteNotebook(_ notebook: Notebook) {
+        modelContext.undoManager?.disableUndoRegistration()
+        deleteNotebookContents(notebook)
+        modelContext.delete(notebook)
+        try? modelContext.save()
+        modelContext.undoManager?.enableUndoRegistration()
+    }
+
+    private func deleteNotebookContents(_ notebook: Notebook) {
+        for child in notebook.children ?? [] {
+            deleteNotebookContents(child)
+            modelContext.delete(child)
+        }
+        for page in notebook.pages ?? [] {
+            deletePageContents(page)
+            modelContext.delete(page)
+        }
+    }
+
+    private func deletePageContents(_ page: Page) {
+        for subpage in page.subpages ?? [] {
+            deletePageContents(subpage)
+            modelContext.delete(subpage)
+        }
+        for block in page.blocks ?? [] {
+            modelContext.delete(block)
+        }
+        for box in page.textBoxes ?? [] {
+            modelContext.delete(box)
+        }
     }
 }
 

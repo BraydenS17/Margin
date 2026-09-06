@@ -11,7 +11,9 @@ struct PageDetailView: View {
     @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
 
-    @State private var mode: PageMode = .edit
+    // Apple Notes-style markup: the page is always typeable; drawing is a temporary
+    // markup state entered via the pencil button or by touching the page with a Pencil.
+    @State private var isDrawing = false
     @State private var inkTool: InkToolKind = .pen
     @State private var inkColor: Color = .black
     @State private var inkWidth: CGFloat = 4
@@ -35,12 +37,6 @@ struct PageDetailView: View {
         )
     }
 
-    enum PageMode: String, CaseIterable, Identifiable {
-        case edit = "Edit"
-        case draw = "Draw"
-        var id: String { rawValue }
-    }
-
     #if os(iOS)
     struct ExportedFile: Identifiable {
         let url: URL
@@ -60,12 +56,12 @@ struct PageDetailView: View {
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
-        // Handwritten pages are drawing-first: land in Draw, not the text tools.
+        // Handwritten pages are drawing-first: land with markup active, not the text tools.
         .onChange(of: page.id, initial: true) { _, _ in
-            mode = page.kind == .canvas ? .draw : .edit
+            isDrawing = page.kind == .canvas
         }
         .overlay(alignment: .bottom) {
-            if mode == .draw {
+            if isDrawing {
                 InkToolbar(
                     tool: $inkTool,
                     color: $inkColor,
@@ -95,7 +91,7 @@ struct PageDetailView: View {
             #if os(iOS)
             FlatIconButton(systemName: "square.and.arrow.up", label: "Export PDF", action: exportPDF)
             #endif
-            if mode == .edit && page.background != .pdf {
+            if !isDrawing && page.background != .pdf {
                 if page.kind == .canvas {
                     FlatIconButton(systemName: "character.textbox", label: "Add Text Box", action: addTextBox)
                 } else {
@@ -105,7 +101,7 @@ struct PageDetailView: View {
             Spacer()
             pageNavigator
             Spacer()
-            modeToggle
+            markupToggle
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -134,28 +130,41 @@ struct PageDetailView: View {
         page.updatedAt = Date()
     }
 
-    private var modeToggle: some View {
-        HStack(spacing: 0) {
-            ForEach(PageMode.allCases) { m in
-                Button {
-                    mode = m
-                    if m == .draw { dismissKeyboard() }
-                } label: {
-                    Text(m.rawValue)
-                        .font(.system(size: 14, weight: .bold))
-                        .tracking(0.5)
-                        .foregroundStyle(mode == m ? Color.white : Theme.muted)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(mode == m ? Theme.accent : Color.clear, in: Capsule())
+    /// Apple Notes-style markup button: one pencil-tip toggle instead of Edit/Draw tabs.
+    /// Tapping it (or touching the page with an Apple Pencil) enters drawing; tapping it
+    /// again puts the pencil away and the page is typeable again.
+    private var markupToggle: some View {
+        Button {
+            setDrawing(!isDrawing)
+        } label: {
+            Group {
+                if isDrawing {
+                    markupGlyph
+                        .foregroundStyle(Color.white)
+                        .background(Theme.accent, in: Circle())
+                        .overlay(Circle().strokeBorder(Theme.accent, lineWidth: 1))
+                } else {
+                    markupGlyph
+                        .foregroundStyle(Theme.text)
+                        .floatingChrome(in: Circle())
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut(m == .edit ? "1" : "2", modifiers: .command)
             }
         }
-        .padding(3)
-        .background(Theme.surface, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+        .buttonStyle(.plain)
+        .keyboardShortcut("d", modifiers: .command)
+        .accessibilityLabel(isDrawing ? "Finish Markup" : "Markup")
+    }
+
+    private var markupGlyph: some View {
+        Image(systemName: "pencil.tip.crop.circle")
+            .font(.system(size: 19, weight: .semibold))
+            .frame(width: 44, height: 44)
+    }
+
+    private func setDrawing(_ drawing: Bool) {
+        guard isDrawing != drawing else { return }
+        isDrawing = drawing
+        if drawing { dismissKeyboard() }
     }
 
     private var pageArea: some View {
@@ -216,11 +225,11 @@ struct PageDetailView: View {
                             .padding(.horizontal, 22)
                             .padding(.top, 20)
                             if page.kind == .document {
-                                BlockListView(page: page, onOpenPage: onOpenPage, audioController: audioController, isEditing: mode == .edit)
+                                BlockListView(page: page, onOpenPage: onOpenPage, audioController: audioController, isEditing: !isDrawing)
                             }
                             BacklinksView(page: page, onOpenPage: onOpenPage)
                         }
-                        .allowsHitTesting(mode == .edit)
+                        .allowsHitTesting(!isDrawing)
                         .sheet(isPresented: $showingIconPicker) {
                             IconPickerView(current: page.icon) { emoji in
                                 page.icon = emoji
@@ -232,7 +241,7 @@ struct PageDetailView: View {
                 .overlay {
                     if page.kind == .canvas {
                         TextBoxLayer(page: page)
-                            .allowsHitTesting(mode == .edit)
+                            .allowsHitTesting(!isDrawing)
                     }
                 }
                 .overlay {
@@ -252,14 +261,25 @@ struct PageDetailView: View {
                     // never reloads its drawing — ink then appears "stuck" on screen across
                     // pages instead of following the page's own inkData.
                     .id(page.id)
-                    .allowsHitTesting(mode == .draw)
+                    .allowsHitTesting(isDrawing)
                 }
+                #if os(iOS)
+                // Touching the page with an Apple Pencil enters markup automatically,
+                // the way it does in Apple Notes — no button press needed. That first
+                // touch only activates markup; strokes ink from the next touch on.
+                .background {
+                    PencilTouchObserver {
+                        setDrawing(true)
+                    }
+                    .allowsHitTesting(false)
+                }
+                #endif
     }
 
     private var metaLine: String {
-        if mode == .draw { return "Draw Mode" }
+        if isDrawing { return "markup · tap the pencil to finish" }
         if page.kind == .canvas { return "handwritten · move boxes by their grip" }
-        return "\(page.background.rawValue) · edit mode"
+        return page.background.rawValue
     }
 
     /// Drops a fresh text box, staggered so consecutive boxes don't stack exactly.
@@ -372,10 +392,9 @@ struct PageDetailView: View {
     }
 
     private func handlePencilGesture(_ action: PencilGestureAction) {
-        // A Pencil gesture while typing means "I want to draw" — switch modes first.
-        guard mode == .draw else {
-            mode = .draw
-            dismissKeyboard()
+        // A Pencil gesture while typing means "I want to draw" — enter markup first.
+        guard isDrawing else {
+            setDrawing(true)
             return
         }
         switch action {
@@ -398,17 +417,11 @@ struct PageDetailView: View {
     }
 
     private func undo() {
-        switch mode {
-        case .edit: modelContext.undoManager?.undo()
-        case .draw: inkUndoController.undo()
-        }
+        if isDrawing { inkUndoController.undo() } else { modelContext.undoManager?.undo() }
     }
 
     private func redo() {
-        switch mode {
-        case .edit: modelContext.undoManager?.redo()
-        case .draw: inkUndoController.redo()
-        }
+        if isDrawing { inkUndoController.redo() } else { modelContext.undoManager?.redo() }
     }
 
     @ViewBuilder
@@ -427,6 +440,68 @@ struct PageDetailView: View {
         }
     }
 }
+
+#if os(iOS)
+/// Watches for Apple Pencil contact on the page surface without consuming any touches.
+///
+/// The ink canvas is only hit-testable while markup is active, so something outside it
+/// has to notice "the user put Pencil to paper" while they're in typing mode. This view
+/// attaches a pencil-only, zero-delay recognizer to the enclosing scroll container
+/// (`cancelsTouchesInView = false`, recognizes simultaneously), so it observes every
+/// pencil touch on the page while finger touches and existing gestures behave as before.
+private struct PencilTouchObserver: UIViewRepresentable {
+    var onPencilTouch: () -> Void
+
+    func makeUIView(context: Context) -> ObserverView {
+        let view = ObserverView()
+        view.onPencilTouch = onPencilTouch
+        return view
+    }
+
+    func updateUIView(_ view: ObserverView, context: Context) {
+        view.onPencilTouch = onPencilTouch
+    }
+
+    final class ObserverView: UIView, UIGestureRecognizerDelegate {
+        var onPencilTouch: (() -> Void)?
+        private weak var recognizer: UIGestureRecognizer?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if let recognizer {
+                recognizer.view?.removeGestureRecognizer(recognizer)
+                self.recognizer = nil
+            }
+            guard window != nil else { return }
+            // Attach to the page's scroll container so the whole page surface is
+            // observed, not just this (zero-hit-testing) background view's frame.
+            var host: UIView? = superview
+            while let view = host, !(view is UIScrollView) { host = view.superview }
+            guard let target = host else { return }
+            let press = UILongPressGestureRecognizer(target: self, action: #selector(pencilTouched(_:)))
+            press.minimumPressDuration = 0
+            press.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.pencil.rawValue)]
+            press.cancelsTouchesInView = false
+            press.delaysTouchesBegan = false
+            press.delegate = self
+            target.addGestureRecognizer(press)
+            recognizer = press
+        }
+
+        @objc private func pencilTouched(_ gesture: UIGestureRecognizer) {
+            guard gesture.state == .began else { return }
+            onPencilTouch?()
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+}
+#endif
 
 private struct RuledBackground: View {
     var body: some View {
